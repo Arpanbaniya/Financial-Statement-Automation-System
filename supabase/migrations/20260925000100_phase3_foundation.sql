@@ -285,40 +285,44 @@ create policy profiles_update_own on public.profiles
   for update to authenticated
   using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
 
--- Owner CRUD for application records; audit events remain read-only to clients.
+-- Clients can maintain their own company list.
+alter table public.companies enable row level security;
+revoke all on public.companies from anon, authenticated;
+grant select, insert, update, delete on public.companies to authenticated;
+create policy companies_select_own on public.companies
+  for select to authenticated using ((select auth.uid()) = user_id);
+create policy companies_insert_own on public.companies
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+create policy companies_update_own on public.companies
+  for update to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+create policy companies_delete_own on public.companies
+  for delete to authenticated using ((select auth.uid()) = user_id);
+
+-- Documents and derived records are read-only to clients. API endpoints will
+-- validate ownership and manage the workflow with server-only credentials.
 do $$
 declare table_name text;
 begin
   foreach table_name in array array[
-    'companies', 'documents', 'processing_jobs', 'financial_statements',
+    'documents', 'processing_jobs', 'financial_statements',
     'financial_line_items', 'line_item_mappings', 'validation_results',
     'financial_metrics', 'manual_reviews', 'reports'
   ]
   loop
     execute format('alter table public.%I enable row level security', table_name);
     execute format('revoke all on public.%I from anon, authenticated', table_name);
-    execute format('grant select, insert, update, delete on public.%I to authenticated', table_name);
+    execute format('grant select on public.%I to authenticated', table_name);
     execute format(
       'create policy %I on public.%I for select to authenticated using ((select auth.uid()) = user_id)',
       table_name || '_select_own', table_name
-    );
-    execute format(
-      'create policy %I on public.%I for insert to authenticated with check ((select auth.uid()) = user_id)',
-      table_name || '_insert_own', table_name
-    );
-    execute format(
-      'create policy %I on public.%I for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id)',
-      table_name || '_update_own', table_name
-    );
-    execute format(
-      'create policy %I on public.%I for delete to authenticated using ((select auth.uid()) = user_id)',
-      table_name || '_delete_own', table_name
     );
   end loop;
 end;
 $$;
 
--- Server-only operations use a privileged key and still need table grants.
+-- The server key bypasses RLS but still requires explicit table privileges.
 do $$
 declare table_name text;
 begin
