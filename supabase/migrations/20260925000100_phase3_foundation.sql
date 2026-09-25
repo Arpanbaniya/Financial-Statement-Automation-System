@@ -400,3 +400,36 @@ using (
       and d.storage_path = name
   )
 );
+
+-- Fail the migration if a public finance table lacks RLS or the bucket is public.
+do $$
+declare
+  missing_rls text;
+begin
+  select string_agg(c.relname, ', ')
+  into missing_rls
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public'
+    and c.relname = any (array[
+      'profiles', 'companies', 'documents', 'processing_jobs',
+      'financial_statements', 'financial_line_items', 'line_item_mappings',
+      'validation_results', 'financial_metrics', 'manual_reviews',
+      'reports', 'audit_events'
+    ])
+    and not c.relrowsecurity;
+
+  if missing_rls is not null then
+    raise exception 'RLS is disabled on: %', missing_rls;
+  end if;
+
+  if not exists (
+    select 1 from storage.buckets
+    where id = 'financial-documents'
+      and public = false
+      and file_size_limit = 10485760
+  ) then
+    raise exception 'Private financial-documents bucket is missing or misconfigured';
+  end if;
+end;
+$$;
