@@ -6,30 +6,22 @@ The goal is a workflow an analyst can inspect. If a line item is unclear or a st
 
 ## Where the project stands
 
-This is an early foundation. The repository currently has a Next.js landing page, a FastAPI health endpoint, and the structure for the financial processing code. Document uploads, statement extraction, calculations, dashboards, and reports are still to come.
+The Next.js site and FastAPI health route run together under one origin. The site has public home, sign-in, and dashboard routes; authentication and private financial data are not active yet. A Supabase Free project has the database schema and private document bucket ready for later phases. Uploads, extraction, analysis, and reports are still to come.
 
-The planned workflow is:
+| Route         | Current purpose                                       |
+| ------------- | ----------------------------------------------------- |
+| `/`           | Project landing page and API connection status        |
+| `/login`      | Sign-in placeholder for the authentication phase      |
+| `/dashboard`  | Empty workspace placeholder and API connection status |
+| `/api/health` | Public FastAPI availability check                     |
 
-1. Upload a financial statement in PDF, Excel, or CSV form.
-2. Extract the statements and organize line items by company and reporting period.
-3. Check totals, units, currencies, and accounting relationships.
-4. Review uncertain mappings and keep a link to the source of each figure.
-5. Explore ratios and trends, then export a workbook for further analysis.
+The planned workflow is to upload a PDF, Excel, or CSV statement, organize its line items and periods, validate the numbers, review uncertain mappings, and produce analysis with links back to the source.
 
 ## Run it locally
 
 You will need Node.js 22 or 24, pnpm 11, and Python 3.12.
 
-Start the web app:
-
-```sh
-pnpm install
-pnpm dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-Start the API in a second terminal. On Windows PowerShell:
+Start the API in one terminal. On Windows PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -45,7 +37,18 @@ python3.12 -m venv .venv
 .venv/bin/python -m uvicorn api.index:app --reload --port 8000
 ```
 
-The API responds at [http://localhost:8000/api/health](http://localhost:8000/api/health) with `{"status":"ok"}`. The web app and API run separately during local development.
+Start the web app in a second terminal:
+
+```sh
+pnpm install
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). The page checks [http://localhost:3000/api/health](http://localhost:3000/api/health), which should return `{"status":"ok"}`. In local development, Next.js forwards `/api/*` to FastAPI on port 8000. On Vercel, `api/index.py` handles those paths on the same domain. No `vercel.json` or production localhost URL is needed.
+
+## Environment variables
+
+`.env.example` lists the public Supabase settings and later server-only settings. A local `.env.local` is ignored by Git. The Phase 4 pages do not use Supabase credentials yet; those values will be used when authentication is built. Keep database passwords and server keys out of browser code and the repository.
 
 ## Checks
 
@@ -68,11 +71,11 @@ On macOS or Linux, use `.venv/bin/python` in place of `.\.venv\Scripts\python.ex
 
 ## Project layout
 
-- `app/` — Next.js frontend
+- `app/` — Next.js pages and shared UI
 - `api/index.py` — FastAPI entry point
-- `finance/`, `ingestion/`, `extraction/`, `normalization/`, `validation/`, `reports/` — space for the processing pipeline
+- `finance/`, `ingestion/`, `extraction/`, `normalization/`, `validation/`, `reports/` — processing pipeline packages
+- `supabase/migrations/` — database and private storage setup
 - `tests/` — API tests
-- `supabase/migrations/` — database migrations as the data layer is added
 
 ## License
 

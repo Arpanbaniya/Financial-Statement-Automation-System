@@ -1,15 +1,27 @@
+import Link from "next/link";
+import { ApiHealth } from "./components/api-health";
+
 export default function HomePage() {
   return (
     <main className="page">
-      <div className="page__content">
+      <section className="page__content">
         <p className="eyebrow">Financial Statement Automation System</p>
-        <h1>From source statements to traceable analysis.</h1>
+        <h1>Know where every number came from.</h1>
         <p className="description">
-          This project will turn financial documents into structured statements,
-          checks, and reports while preserving the source behind each number.
+          A workspace for turning financial documents into checked, traceable
+          statements and analysis. The foundation is live; accounts and document
+          uploads come next.
         </p>
-        <p className="status">Project foundation · Phase 2</p>
-      </div>
+        <div className="actions">
+          <Link className="button button--primary" href="/dashboard">
+            View dashboard
+          </Link>
+          <Link className="button button--secondary" href="/login">
+            Sign in
+          </Link>
+        </div>
+        <ApiHealth />
+      </section>
     </main>
   );
 }

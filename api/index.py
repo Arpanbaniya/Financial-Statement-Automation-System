@@ -1,4 +1,4 @@
-"""Vercel entrypoint for the Phase 2 FastAPI skeleton."""
+"""Vercel's Python entrypoint for the public API health route."""
 
 from fastapi import FastAPI
 
