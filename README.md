@@ -6,7 +6,7 @@ The goal is a workflow an analyst can inspect. If a line item is unclear or a st
 
 ## Where the project stands
 
-The Next.js site and FastAPI routes run together under one origin. Supabase email/password accounts protect the dashboard, and each new account gets a profile row. Signed-in users can upload PDF, XLSX, and CSV documents directly to a private Supabase Storage bucket. A Python extraction module can read those formats into a common source-preserving structure, including candidate PDF tables and populated spreadsheet regions. Running that module against uploaded files, analysis, and reports are still to come.
+The Next.js site and FastAPI routes run together under one origin. Supabase email/password accounts protect the dashboard, and each new account gets a profile row. Signed-in users can upload PDF, XLSX, and CSV documents directly to a private Supabase Storage bucket. Python modules can extract their content and identify likely income statements, balance sheets, and cash flow statements with source-linked evidence. Running those modules against uploaded files, analysis, and reports are still to come.
 
 | Route                          | Current purpose                                |
 | ------------------------------ | ---------------------------------------------- |
@@ -70,6 +70,12 @@ Each result records the reader and version used. Recoverable problems are return
 
 This is a Python building block, not an automatic processing job yet. An upload remains `uploaded` until a later phase connects extraction to the authenticated processing endpoint. No financial line item mapping or conclusions are made here. A PDF with no searchable text returns `needs_review` with an OCR warning because OCR is not supported yet; this result does not change the database document status by itself.
 
+## Statement detection
+
+`finance.detect_statements(extracted_document)` applies configurable heading and line-item rules. It returns one result per PDF page, populated Excel region, or CSV table, with a likely statement type, a bounded confidence score, the matched words and their source locations, and warnings. Familiar titles such as “Statement of Operations,” “Profit and Loss,” “Statement of Financial Position,” and “Statement of Cash Flows” are recognized. When evidence is weak or points to competing statement types, the result is `unknown` for review. The score is a rule-based indication of evidence strength, not a statistical probability.
+
+Detection currently runs in Python only. It does not update the database or classify files as part of the upload flow. Periods, currency, line-item mapping, and accounting validation belong to later phases.
+
 Supabase allows both the local and production `/auth/callback` URLs as Auth redirects. Its default confirmation email returns to the matching site; the browser client stores the session in cookies before opening the dashboard. Keep database passwords and server keys out of browser code and the repository.
 
 ## Checks
@@ -97,7 +103,8 @@ On macOS or Linux, use `.venv/bin/python` in place of `.\.venv\Scripts\python.ex
 - `api/index.py` — FastAPI entry point
 - `ingestion/` — source validation and common extracted-document types
 - `extraction/` — PDF, XLSX, and CSV readers
-- `finance/`, `normalization/`, `validation/`, `reports/` — later processing packages
+- `finance/` — rule-based statement detection; later calculations
+- `normalization/`, `validation/`, `reports/` — later processing packages
 - `supabase/migrations/` — database and private storage setup
 - `tests/` — API and ingestion tests with local fixtures
 
