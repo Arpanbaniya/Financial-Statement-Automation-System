@@ -106,6 +106,12 @@ Values must already be scaled to ones and follow the taxonomy's sign conventions
 
 This is a Python engine for the future processing flow. Validation results are not yet saved to Supabase or shown in the dashboard. The database's existing result-status names differ from the Phase 13 Python statuses, so persistence will need an explicit mapping when that flow is connected.
 
+## Financial ratios
+
+`finance.calculate_ratios(...)` calculates 12 versioned ratios from accepted income and balance-sheet values: gross, operating, and net margins; return on assets and equity; current and simplified quick ratios; interest-bearing debt to equity; interest coverage; and asset, receivables, and inventory turnover. `finance.FORMULAS` holds each definition, required inputs, output unit, and missing/zero-denominator rules. Percent results are stored as percentage points, so `40` means 40%; turnover and coverage results use `times`.
+
+Return and turnover ratios prefer opening and ending balance-sheet values from the exact dates around the income period. If an opening value is missing, they use the ending value with a warning. Zero denominators and missing or conflicting inputs produce an unavailable result, never an invented number. Results retain the formula ID, numerator, denominator, period, timestamp, warnings, and source references. The calculation timestamp is supplied by the caller so repeated runs are reproducible. The engine runs in Python today; metrics are not yet calculated during upload or shown in the dashboard.
+
 Supabase allows both the local and production `/auth/callback` URLs as Auth redirects. Its default confirmation email returns to the matching site; the browser client stores the session in cookies before opening the dashboard. Keep database passwords and server keys out of browser code and the repository.
 
 ## Checks
@@ -133,7 +139,7 @@ On macOS or Linux, use `.venv/bin/python` in place of `.\.venv\Scripts\python.ex
 - `api/index.py` — FastAPI entry point
 - `ingestion/` — source validation and common extracted-document types
 - `extraction/` — PDF, XLSX, and CSV readers
-- `finance/` — rule-based statement detection; later calculations
+- `finance/` — rule-based statement detection and financial ratios
 - `normalization/` — canonical fields, conservative label mapping, and amount/period normalization
 - `validation/` — deterministic financial checks; `reports/` — later reports
 - `supabase/migrations/` — database and private storage setup
