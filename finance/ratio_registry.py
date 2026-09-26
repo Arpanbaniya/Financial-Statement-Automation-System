@@ -5,7 +5,7 @@ from types import MappingProxyType
 from typing import Literal
 
 RatioUnit = Literal["percent", "times"]
-StatementRole = Literal["income", "ending_balance", "opening_balance"]
+StatementRole = Literal["income", "ending_balance", "opening_balance", "cash_flow"]
 
 
 @dataclass(frozen=True, slots=True)

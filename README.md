@@ -112,6 +112,12 @@ This is a Python engine for the future processing flow. Validation results are n
 
 Return and turnover ratios prefer opening and ending balance-sheet values from the exact dates around the income period. If an opening value is missing, they use the ending value with a warning. Zero denominators and missing or conflicting inputs produce an unavailable result, never an invented number. Results retain the formula ID, numerator, denominator, period, timestamp, warnings, and source references. The calculation timestamp is supplied by the caller so repeated runs are reproducible. The engine runs in Python today; metrics are not yet calculated during upload or shown in the dashboard.
 
+## Changes over time and common-size statements
+
+`finance.calculate_horizontal(...)` compares accepted amounts across matching periods. It defaults to year-over-year comparison and also supports explicit sequential comparison. It covers revenue, gross profit, operating income, net income, assets, interest-bearing debt, equity, operating cash flow, and free cash flow. Free cash flow uses operating cash flow plus signed capital expenditure, whose taxonomy convention is a negative outflow. The result keeps both reported values and their amount change. A zero or negative earlier value leaves percentage growth unavailable; a change from positive to negative gets a warning. Missing or duplicate comparison periods are not guessed.
+
+`finance.calculate_common_size(...)` expresses income-statement lines as a percentage of revenue and balance-sheet lines as a percentage of total assets. A missing, zero, or negative base produces an unavailable result. Both functions keep formula IDs, dates, accepted source references, warnings, and a caller-supplied timestamp. They are Python building blocks and are not part of the upload or dashboard flow yet.
+
 Supabase allows both the local and production `/auth/callback` URLs as Auth redirects. Its default confirmation email returns to the matching site; the browser client stores the session in cookies before opening the dashboard. Keep database passwords and server keys out of browser code and the repository.
 
 ## Checks
@@ -139,7 +145,7 @@ On macOS or Linux, use `.venv/bin/python` in place of `.\.venv\Scripts\python.ex
 - `api/index.py` — FastAPI entry point
 - `ingestion/` — source validation and common extracted-document types
 - `extraction/` — PDF, XLSX, and CSV readers
-- `finance/` — rule-based statement detection and financial ratios
+- `finance/` — statement detection, ratios, horizontal and common-size analysis
 - `normalization/` — canonical fields, conservative label mapping, and amount/period normalization
 - `validation/` — deterministic financial checks; `reports/` — later reports
 - `supabase/migrations/` — database and private storage setup
