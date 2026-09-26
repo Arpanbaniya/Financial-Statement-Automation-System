@@ -6,16 +6,18 @@ The goal is a workflow an analyst can inspect. If a line item is unclear or a st
 
 ## Where the project stands
 
-The Next.js site and FastAPI health route run together under one origin. Supabase email/password accounts protect the dashboard, and each new account gets a profile row. A Supabase Free project has the database schema and private document bucket ready for later phases. Uploads, extraction, analysis, and reports are still to come.
+The Next.js site and FastAPI routes run together under one origin. Supabase email/password accounts protect the dashboard, and each new account gets a profile row. Signed-in users can now upload PDF, XLSX, and CSV documents directly to a private Supabase Storage bucket. Extraction, analysis, and reports are still to come.
 
-| Route            | Current purpose                                |
-| ---------------- | ---------------------------------------------- |
-| `/`              | Project landing page and API connection status |
-| `/signup`        | Create an email/password account               |
-| `/login`         | Sign in                                        |
-| `/auth/callback` | Complete the emailed signup link               |
-| `/dashboard`     | Private workspace and sign-out control         |
-| `/api/health`    | Public FastAPI availability check              |
+| Route                          | Current purpose                                |
+| ------------------------------ | ---------------------------------------------- |
+| `/`                            | Project landing page and API connection status |
+| `/signup`                      | Create an email/password account               |
+| `/login`                       | Sign in                                        |
+| `/auth/callback`               | Complete the emailed signup link               |
+| `/dashboard`                   | Private workspace and sign-out control         |
+| `/api/health`                  | Public FastAPI availability check              |
+| `/api/documents`               | Reserve an upload or list your documents       |
+| `/api/documents/{id}/complete` | Verify a finished upload                       |
 
 The planned workflow is to upload a PDF, Excel, or CSV statement, organize its line items and periods, validate the numbers, review uncertain mappings, and produce analysis with links back to the source.
 
@@ -50,9 +52,15 @@ Open [http://localhost:3000](http://localhost:3000). The page checks [http://loc
 
 ## Environment variables
 
-Copy `.env.example` to `.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the Supabase project. Set `NEXT_PUBLIC_SITE_URL` to `http://localhost:3000` for local development. Set the same Supabase values and the production site URL in Vercel. `.env.local` is ignored by Git.
+Copy `.env.example` to `.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the Supabase project. Set `NEXT_PUBLIC_SITE_URL` to `http://localhost:3000` for local development. For document uploads, add `SUPABASE_SECRET_KEY` to `.env.local` and Vercel Production. This key must be available to the Python API and must never use the `NEXT_PUBLIC_` prefix. Set the public Supabase values and production site URL in Vercel too. `.env.local` is ignored by Git.
 
-The publishable key identifies the Supabase project; it is safe to include in browser code because permissions still come from the signed-in user's JWT and database row-level security. A service-role key bypasses row-level security and must stay on the server. Phase 5 does not need one. The browser and server share the user's session through cookies, which the server verifies before showing the dashboard. The profile row is created by the Phase 3 database trigger when Supabase creates a user.
+The publishable key identifies the Supabase project; it is safe to include in browser code because permissions still come from the signed-in user's JWT and database row-level security. The secret key bypasses row-level security and stays on the server. The API checks the user's session with Supabase Auth before using that key, then limits every database operation to that user's ID. The browser and server share the user's session through cookies, which the server verifies before showing the dashboard. The profile row is created by the Phase 3 database trigger when Supabase creates a user.
+
+## How uploads work
+
+The browser checks the extension, MIME type, file size, and a basic file signature, then calculates a SHA-256 fingerprint. `POST /api/documents` creates a `reserved` metadata row and returns a private path. The browser sends file bytes to Supabase Storage using a resumable upload with a real progress indicator. `POST /api/documents/{id}/complete` verifies that Storage reports the expected object, path, size, and MIME type before changing the row to `uploaded`. The API never receives the file bytes. Repeating a reservation for the same fingerprint reuses an unfinished reservation; a completed duplicate is rejected. Unfinished reservations expire after one hour and are cleaned during normal document requests.
+
+The fingerprint helps spot accidental duplicates, but the API cannot independently verify file contents without downloading them. Detailed file inspection and processing belong to later phases. Uploaded files remain private under the account's own Storage path. The private bucket's 10 MB limit and Storage policies are set by the Phase 3 migration.
 
 Supabase allows both the local and production `/auth/callback` URLs as Auth redirects. Its default confirmation email returns to the matching site; the browser client stores the session in cookies before opening the dashboard. Keep database passwords and server keys out of browser code and the repository.
 

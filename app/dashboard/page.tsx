@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "../auth/actions";
 import { ApiHealth } from "../components/api-health";
+import { DocumentUpload } from "../components/document-upload";
 import { createClient } from "../../lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -34,8 +35,7 @@ export default async function DashboardPage({
         <h1>Welcome to your dashboard.</h1>
         <p className="description">
           Signed in as <strong>{profile?.display_name || user.email}</strong>.
-          Your profile and data belong to this account. Document uploads arrive
-          in the next phase.
+          Your profile and documents belong to this account.
         </p>
         {error === "signout" && (
           <p className="form-message form-message--error" role="alert">
@@ -52,6 +52,7 @@ export default async function DashboardPage({
             Back to home
           </Link>
         </div>
+        <DocumentUpload />
         <ApiHealth />
       </section>
     </main>
