@@ -98,6 +98,14 @@ The database schema now has reviewer and review-time columns for mapping decisio
 
 These functions are available in Python now. The upload flow does not call them yet; a later processing phase will connect extraction, mapping, metadata normalization, persistence, and review.
 
+## Financial validation
+
+`validation.validate_statements(...)` checks accepted, normalized statement values and returns results with a check name, pass/warning/fail/unavailable status, expected and actual amounts, difference, tolerance, severity, source references, and a plain-English explanation. It checks the balance-sheet equation, gross profit, supported asset and liability subtotals, the beginning-to-ending cash bridge, duplicate periods, conflicting values, mixed units and currencies, and missing core fields. Current asset and liability subtotals, operating income, and the cash-flow category subtotal run only when the caller confirms the source presentation supports those formulas.
+
+Values must already be scaled to ones and follow the taxonomy's sign conventions. Suggested or unresolved mappings are not used in arithmetic. Missing values, uncertain currencies, and unclear unit scales yield warnings or unavailable checks, rather than invented figures or currency conversion. The default tolerance is the larger of one unit and one millionth of the compared amount; callers can supply a stricter or looser `TolerancePolicy`. Validation never changes the input snapshots. Beginning and ending cash are optional cash-flow inputs with source references because they are not among the current canonical fields.
+
+This is a Python engine for the future processing flow. Validation results are not yet saved to Supabase or shown in the dashboard. The database's existing result-status names differ from the Phase 13 Python statuses, so persistence will need an explicit mapping when that flow is connected.
+
 Supabase allows both the local and production `/auth/callback` URLs as Auth redirects. Its default confirmation email returns to the matching site; the browser client stores the session in cookies before opening the dashboard. Keep database passwords and server keys out of browser code and the repository.
 
 ## Checks
@@ -127,7 +135,7 @@ On macOS or Linux, use `.venv/bin/python` in place of `.\.venv\Scripts\python.ex
 - `extraction/` — PDF, XLSX, and CSV readers
 - `finance/` — rule-based statement detection; later calculations
 - `normalization/` — canonical fields, conservative label mapping, and amount/period normalization
-- `validation/`, `reports/` — later processing packages
+- `validation/` — deterministic financial checks; `reports/` — later reports
 - `supabase/migrations/` — database and private storage setup
 - `tests/` — API and ingestion tests with local fixtures
 
