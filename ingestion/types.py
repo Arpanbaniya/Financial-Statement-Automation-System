@@ -19,6 +19,7 @@ class IngestionWarning:
 class ExtractedPage:
     number: int  # One-based page number.
     text: str
+    method: str = "pypdf-text"
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,10 +46,12 @@ class ExtractedSheet:
 @dataclass(frozen=True, slots=True)
 class ExtractedTable:
     name: str
-    source: str  # Sheet name or "CSV"; PDF table detection comes later.
+    source: str  # Sheet name, "CSV", or PDF page label.
     rows: tuple[ExtractedRow, ...]
     headers: tuple[str, ...] = ()
     delimiter: str | None = None
+    page_number: int | None = None
+    range_reference: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,3 +65,5 @@ class ExtractedDocument:
     warnings: tuple[IngestionWarning, ...]
     extraction_method: str
     extraction_version: str
+    extraction_status: Literal["extracted", "needs_review"] = "extracted"
+    source_encoding: str | None = None

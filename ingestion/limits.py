@@ -1,0 +1,9 @@
+"""Resource limits for files accepted by the application's 10 MB upload policy."""
+
+MAX_SOURCE_BYTES = 10 * 1024 * 1024
+MAX_UNCOMPRESSED_XLSX_BYTES = 60 * 1024 * 1024
+MAX_ZIP_ENTRIES = 2_000
+MAX_PDF_PAGES = 500
+MAX_ROWS = 50_000
+MAX_CELLS = 250_000
+MAX_TEXT_CHARS = 10_000_000

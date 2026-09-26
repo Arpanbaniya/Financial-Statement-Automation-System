@@ -1,6 +1,7 @@
 """Read supported source documents without interpreting their financial meaning."""
 
-from ingestion.reader import IngestionError, ingest_document
+from ingestion.errors import IngestionError
+from ingestion.reader import ingest_document
 from ingestion.types import (
     ExtractedCell,
     ExtractedDocument,

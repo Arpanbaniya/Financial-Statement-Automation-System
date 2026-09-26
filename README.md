@@ -6,7 +6,7 @@ The goal is a workflow an analyst can inspect. If a line item is unclear or a st
 
 ## Where the project stands
 
-The Next.js site and FastAPI routes run together under one origin. Supabase email/password accounts protect the dashboard, and each new account gets a profile row. Signed-in users can upload PDF, XLSX, and CSV documents directly to a private Supabase Storage bucket. A Python ingestion module can read those formats into a common source-preserving structure. Running that module against uploaded files, deeper extraction, analysis, and reports are still to come.
+The Next.js site and FastAPI routes run together under one origin. Supabase email/password accounts protect the dashboard, and each new account gets a profile row. Signed-in users can upload PDF, XLSX, and CSV documents directly to a private Supabase Storage bucket. A Python extraction module can read those formats into a common source-preserving structure, including candidate PDF tables and populated spreadsheet regions. Running that module against uploaded files, analysis, and reports are still to come.
 
 | Route                          | Current purpose                                |
 | ------------------------------ | ---------------------------------------------- |
@@ -64,9 +64,11 @@ The fingerprint helps spot accidental duplicates, but the API cannot independent
 
 ## Document ingestion foundation
 
-`ingestion.ingest_document(source_bytes, filename="statement.pdf")` returns an `ExtractedDocument`. It keeps PDF text under page numbers, XLSX values and formulas under sheet names and cell coordinates, and CSV text under record and line numbers with the detected delimiter. It records the reader and version used. Recoverable problems are returned as structured warnings; unreadable or unsupported files raise `IngestionError` with a stable code. The adapters read only from source bytes and impose limits on expanded workbooks and extracted content.
+`ingestion.ingest_document(source_bytes, filename="statement.pdf")` returns an `ExtractedDocument`. For PDFs, it reads text page by page and attempts to find tables with `pdfplumber`, keeping each table's page number. For XLSX files, it lists sheets, preserves cell positions and formulas, and groups populated rows into regions with cell ranges. It reads the workbook without evaluating formulas or macros. For CSV files, it detects common delimiters, keeps the original decoded text and every record, and records row numbers, line numbers, and the first row as a candidate header. It supports UTF-8, UTF-8 with BOM, UTF-16 with BOM, and Windows-1252; a warning flags the legacy encoding.
 
-This is a Python building block, not an automatic processing job yet. An upload remains `uploaded` until a later phase connects ingestion and financial extraction to the authenticated processing endpoint. No financial line item mapping or conclusions are made here. Image-only PDF pages produce an OCR warning because OCR is not supported yet.
+Each result records the reader and version used. Recoverable problems are returned as structured warnings; unreadable or unsupported files raise `IngestionError` with a stable code. The adapters read only from source bytes and impose limits on expanded workbooks and extracted content.
+
+This is a Python building block, not an automatic processing job yet. An upload remains `uploaded` until a later phase connects extraction to the authenticated processing endpoint. No financial line item mapping or conclusions are made here. A PDF with no searchable text returns `needs_review` with an OCR warning because OCR is not supported yet; this result does not change the database document status by itself.
 
 Supabase allows both the local and production `/auth/callback` URLs as Auth redirects. Its default confirmation email returns to the matching site; the browser client stores the session in cookies before opening the dashboard. Keep database passwords and server keys out of browser code and the repository.
 
@@ -93,8 +95,9 @@ On macOS or Linux, use `.venv/bin/python` in place of `.\.venv\Scripts\python.ex
 
 - `app/` — Next.js pages and shared UI
 - `api/index.py` — FastAPI entry point
-- `ingestion/` — source readers and common extracted-document types
-- `finance/`, `extraction/`, `normalization/`, `validation/`, `reports/` — later processing packages
+- `ingestion/` — source validation and common extracted-document types
+- `extraction/` — PDF, XLSX, and CSV readers
+- `finance/`, `normalization/`, `validation/`, `reports/` — later processing packages
 - `supabase/migrations/` — database and private storage setup
 - `tests/` — API and ingestion tests with local fixtures
 
