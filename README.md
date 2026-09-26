@@ -6,7 +6,7 @@ The goal is a workflow an analyst can inspect. If a line item is unclear or a st
 
 ## Where the project stands
 
-The Next.js site and FastAPI routes run together under one origin. Supabase email/password accounts protect the dashboard, and each new account gets a profile row. Signed-in users can upload PDF, XLSX, and CSV documents directly to a private Supabase Storage bucket. Python modules can extract their content and identify likely income statements, balance sheets, and cash flow statements with source-linked evidence. A documented set of financial fields gives later analysis consistent names. Running those modules against uploaded files, analysis, and reports are still to come.
+The Next.js site and FastAPI routes run together under one origin. Supabase email/password accounts protect the dashboard, and each new account gets a profile row. Signed-in users can upload PDF, XLSX, and CSV documents directly to a private Supabase Storage bucket. Python modules can extract their content, identify likely statements, and suggest line-item mappings with source-linked evidence. Running those modules against uploaded files, analysis, and reports are still to come.
 
 | Route                          | Current purpose                                |
 | ------------------------------ | ---------------------------------------------- |
@@ -74,13 +74,21 @@ This is a Python building block, not an automatic processing job yet. An upload 
 
 `finance.detect_statements(extracted_document)` applies configurable heading and line-item rules. It returns one result per PDF page, populated Excel region, or CSV table, with a likely statement type, a bounded confidence score, the matched words and their source locations, and warnings. Familiar titles such as “Statement of Operations,” “Profit and Loss,” “Statement of Financial Position,” and “Statement of Cash Flows” are recognized. When evidence is weak or points to competing statement types, the result is `unknown` for review. The score is a rule-based indication of evidence strength, not a statistical probability.
 
-Detection currently runs in Python only. It does not update the database or classify files as part of the upload flow. Periods, currency, line-item mapping, and accounting validation belong to later phases.
+Detection currently runs in Python only. It does not update the database or classify files as part of the upload flow. Periods, currency, and accounting validation belong to later phases.
 
 ## Canonical financial fields
 
 `normalization.taxonomy` defines 52 fields across the income statement, balance sheet, and cash flow statement. Each field has a stable machine name, a readable name, an accounting definition, example source labels, a sign convention, and an instant or duration basis. The same name can have a different role in different statements: `net_income` on an income statement is the period's final profit or loss, while `net_income` on a cash flow statement is an optional line in an indirect reconciliation.
 
-The `required` flag identifies core fields this project will look for when judging completeness of a typical non-financial company statement. It is not a rule that every company must disclose that line. Sign notes describe the values the application will use after normalization; source files can display outflows and expenses differently. Aliases are reference examples for the next phase, not automatic matches. `get_field(statement_type, machine_name)` looks up an exact canonical key.
+The `required` flag identifies core fields this project will look for when judging completeness of a typical non-financial company statement. It is not a rule that every company must disclose that line. Sign notes describe the values the application will use after normalization; source files can display outflows and expenses differently. `get_field(statement_type, machine_name)` looks up an exact canonical key.
+
+## Line-item mapping
+
+`normalization.map_label(...)` compares an original line-item label with the taxonomy for a known statement type. It tries an exact display name or alias first, then a version with case, spacing, and punctuation normalized. It does not guess from partial phrases or spelling similarity. For example, “Sales” maps to `revenue`, while “Revenue growth” stays unresolved. Generic labels such as “Other” go to review, with possible fields listed when useful.
+
+Each immutable mapping record keeps the original label, suggested field, method, confidence, source location, comparison evidence, and review status. `map_table_rows(...)` reads labels from an extracted table and keeps page, sheet, cell, row, and CSV line references. `correct_mapping(...)` returns a new accepted record with a reviewer ID and review time; it leaves the original extraction and earlier suggestion intact. Exact, normalized, and reviewer-selected decisions use confidence values of 0.97, 0.90, and 1.00 respectively. These are rule strengths or an explicit review decision, not statistical probabilities.
+
+The database schema now has reviewer and review-time columns for mapping decisions. Original labels and source coordinates remain on the related financial line-item row. Mapping and corrections are Python building blocks for now; the authenticated processing and review endpoints still need to connect them to persistence, audit events, validation, and reports.
 
 Supabase allows both the local and production `/auth/callback` URLs as Auth redirects. Its default confirmation email returns to the matching site; the browser client stores the session in cookies before opening the dashboard. Keep database passwords and server keys out of browser code and the repository.
 
@@ -110,7 +118,7 @@ On macOS or Linux, use `.venv/bin/python` in place of `.\.venv\Scripts\python.ex
 - `ingestion/` — source validation and common extracted-document types
 - `extraction/` — PDF, XLSX, and CSV readers
 - `finance/` — rule-based statement detection; later calculations
-- `normalization/` — canonical field definitions; source-label mapping comes later
+- `normalization/` — canonical field definitions and conservative source-label mapping
 - `validation/`, `reports/` — later processing packages
 - `supabase/migrations/` — database and private storage setup
 - `tests/` — API and ingestion tests with local fixtures
