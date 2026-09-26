@@ -1,0 +1,36 @@
+{
+  "cik": 123456,
+  "entityName": "Sample Public Company",
+  "facts": {
+    "us-gaap": {
+      "RevenueFromContractWithCustomerExcludingAssessedTax": {
+        "label": "Revenue",
+        "units": {"USD": [
+          {"start": "2024-01-01", "end": "2024-12-31", "val": 1000, "accn": "0000123456-25-000001", "fy": 2024, "fp": "FY", "form": "10-K", "filed": "2025-03-01", "frame": "CY2024"},
+          {"start": "2023-01-01", "end": "2023-12-31", "val": 900, "accn": "0000123456-24-000010", "fy": 2023, "fp": "FY", "form": "10-K", "filed": "2024-03-01"}
+        ]}
+      },
+      "Assets": {
+        "label": "Assets",
+        "units": {"USD": [
+          {"end": "2024-12-31", "val": 2400, "accn": "0000123456-25-000001", "fy": 2024, "fp": "FY", "form": "10-K", "filed": "2025-03-01"}
+        ]}
+      },
+      "PaymentsToAcquirePropertyPlantAndEquipment": {
+        "label": "Payments to acquire property and equipment",
+        "units": {"USD": [
+          {"start": "2024-01-01", "end": "2024-12-31", "val": 80, "accn": "0000123456-25-000001", "fy": 2024, "fp": "FY", "form": "10-K", "filed": "2025-03-01"}
+        ]}
+      },
+      "EarningsPerShareBasic": {
+        "label": "Earnings per share",
+        "units": {"USD/shares": [
+          {"start": "2024-01-01", "end": "2024-12-31", "val": 2, "accn": "0000123456-25-000001", "form": "10-K", "filed": "2025-03-01"}
+        ]}
+      }
+    },
+    "dei": {
+      "EntityCommonStockSharesOutstanding": {"units": {"shares": []}}
+    }
+  }
+}

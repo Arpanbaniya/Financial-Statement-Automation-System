@@ -1,0 +1,13 @@
+{
+  "cik": 123456,
+  "name": "Sample Public Company",
+  "filings": {
+    "recent": {
+      "accessionNumber": ["0000123456-25-000001", "0000123456-25-000002", "0000123456-24-000003"],
+      "form": ["10-K", "8-K", "10-Q"],
+      "filingDate": ["2025-03-01", "2025-05-01", "2024-11-01"],
+      "reportDate": ["2024-12-31", "", "2024-09-30"],
+      "primaryDocument": ["annual.htm", "notice.htm", "quarter.htm"]
+    }
+  }
+}
