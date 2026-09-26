@@ -1,5 +1,10 @@
-"""Canonical financial fields and source-label mapping."""
+"""Canonical financial fields, source mapping, and metadata normalization."""
 
+from normalization.amounts import (
+    NormalizationWarning,
+    NormalizedAmount,
+    normalize_amount,
+)
 from normalization.mapping import (
     MappingEvidence,
     MappingRecord,
@@ -9,6 +14,7 @@ from normalization.mapping import (
     map_table_rows,
     normalize_label_text,
 )
+from normalization.periods import NormalizedPeriod, normalize_period
 from normalization.taxonomy import (
     BALANCE_SHEET_FIELDS,
     CASH_FLOW_FIELDS,
@@ -29,6 +35,9 @@ __all__ = [
     "CanonicalField",
     "MappingEvidence",
     "MappingRecord",
+    "NormalizationWarning",
+    "NormalizedAmount",
+    "NormalizedPeriod",
     "SourceLocation",
     "correct_mapping",
     "fields_for_statement",
@@ -36,4 +45,6 @@ __all__ = [
     "map_label",
     "map_table_rows",
     "normalize_label_text",
+    "normalize_amount",
+    "normalize_period",
 ]

@@ -90,6 +90,14 @@ Each immutable mapping record keeps the original label, suggested field, method,
 
 The database schema now has reviewer and review-time columns for mapping decisions. Original labels and source coordinates remain on the related financial line-item row. Mapping and corrections are Python building blocks for now; the authenticated processing and review endpoints still need to connect them to persistence, audit events, validation, and reports.
 
+## Amounts and reporting periods
+
+`normalization.normalize_amount(...)` reads comma-separated numbers, decimals, accounting parentheses, minus signs, and currency symbols. Pass the statement's reported unit, such as `"thousands"` or `"millions"`, to get an exact `Decimal` amount in ones. For example, `normalize_amount("(125.50)", unit="millions")` keeps `(125.50)` and returns `-125500000.00`. Blank cells and dashes remain missing; they never become zero. An unknown unit, invalid number, or unclear currency is marked for review. A missing unit is treated as actual/ones. `$` and `¥` need an explicit currency code because those symbols can represent more than one currency. The module never converts between currencies.
+
+`normalization.normalize_period(...)` distinguishes a balance sheet's as-of date from an income or cash-flow statement's date range. It accepts explicit dates, full date ranges, headings such as `"Year ended December 31, 2025"`, and labels such as `"Q1 FY2025"`. For a fiscal label, pass `fiscal_year_end=(month, day)` to calculate exact dates. Without that calendar or explicit dates, the label stays unresolved for review. Annual, quarterly, six-month, nine-month, and other durations match the existing database period types. Both normalizers return the original input, normalized metadata, status, and warnings for later review.
+
+These functions are available in Python now. The upload flow does not call them yet; a later processing phase will connect extraction, mapping, metadata normalization, persistence, and review.
+
 Supabase allows both the local and production `/auth/callback` URLs as Auth redirects. Its default confirmation email returns to the matching site; the browser client stores the session in cookies before opening the dashboard. Keep database passwords and server keys out of browser code and the repository.
 
 ## Checks
@@ -118,7 +126,7 @@ On macOS or Linux, use `.venv/bin/python` in place of `.\.venv\Scripts\python.ex
 - `ingestion/` — source validation and common extracted-document types
 - `extraction/` — PDF, XLSX, and CSV readers
 - `finance/` — rule-based statement detection; later calculations
-- `normalization/` — canonical field definitions and conservative source-label mapping
+- `normalization/` — canonical fields, conservative label mapping, and amount/period normalization
 - `validation/`, `reports/` — later processing packages
 - `supabase/migrations/` — database and private storage setup
 - `tests/` — API and ingestion tests with local fixtures
