@@ -118,6 +118,12 @@ Return and turnover ratios prefer opening and ending balance-sheet values from t
 
 `finance.calculate_common_size(...)` expresses income-statement lines as a percentage of revenue and balance-sheet lines as a percentage of total assets. A missing, zero, or negative base produces an unavailable result. Both functions keep formula IDs, dates, accepted source references, warnings, and a caller-supplied timestamp. They are Python building blocks and are not part of the upload or dashboard flow yet.
 
+## Working capital
+
+`finance.calculate_working_capital(...)` returns net working capital (current assets minus current liabilities), days sales outstanding (DSO), days inventory outstanding (DIO), days payables outstanding (DPO), and the cash conversion cycle (CCC = DSO + DIO - DPO). The three day measures use average opening and ending balances when both are available. They divide by revenue for DSO and by cost of revenue for DIO and DPO, then multiply by the actual number of days in the income period. Cost of revenue is a proxy for purchases in DPO, so DPO may differ from a calculation based on supplier purchases.
+
+Missing opening balances use the ending balance with a warning. Missing accepted inputs, conflicting currencies, negative average balances, and nonpositive revenue or cost of revenue leave affected day measures unavailable; CCC needs all three. Results include formula IDs, inputs, source references, periods, day counts, and warnings. These are Python calculations only; upload processing and dashboard display are still to be connected.
+
 Supabase allows both the local and production `/auth/callback` URLs as Auth redirects. Its default confirmation email returns to the matching site; the browser client stores the session in cookies before opening the dashboard. Keep database passwords and server keys out of browser code and the repository.
 
 ## Checks
