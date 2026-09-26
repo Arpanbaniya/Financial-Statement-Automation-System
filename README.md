@@ -44,7 +44,7 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The page checks [http://localhost:3000/api/health](http://localhost:3000/api/health), which should return `{"status":"ok"}`. In local development, Next.js forwards `/api/*` to FastAPI on port 8000. On Vercel, `api/index.py` handles those paths on the same domain. No `vercel.json` or production localhost URL is needed.
+Open [http://localhost:3000](http://localhost:3000). The page checks [http://localhost:3000/api/health](http://localhost:3000/api/health), which should return `{"status":"ok"}`. In local development, Next.js forwards `/api/*` to FastAPI on port 8000. On Vercel, `vercel.json` routes `/api/*` to the FastAPI function in `api/index.py` on the same domain. No production localhost URL is used.
 
 ## Environment variables
 
