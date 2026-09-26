@@ -239,6 +239,7 @@ def _amount(
                 "Capital expenditure is positive; check its signed convention.",
             )
         )
+        return None, tuple(inputs), tuple(warnings)
     return (
         sum((item.value for item in inputs), Decimal(0)),
         tuple(inputs),

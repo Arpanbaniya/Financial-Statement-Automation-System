@@ -6,7 +6,7 @@ The goal is a workflow an analyst can inspect. If a line item is unclear or a st
 
 ## Where the project stands
 
-The Next.js site and FastAPI routes run together under one origin. Supabase email/password accounts protect the dashboard, and each new account gets a profile row. Signed-in users can upload PDF, XLSX, and CSV documents directly to a private Supabase Storage bucket. Python modules can extract their content, identify likely statements, and suggest line-item mappings with source-linked evidence. Running those modules against uploaded files, analysis, and reports are still to come.
+The Next.js site and FastAPI routes run together under one origin. Supabase email/password accounts protect the dashboard, and each new account gets a profile row. Signed-in users can upload PDF, XLSX, and CSV documents directly to a private Supabase Storage bucket. Python modules can extract content, identify statements, suggest mappings, validate amounts, calculate analysis, and make an Excel report. The automatic job that takes an uploaded file through those modules and saves its results is still to come.
 
 | Route                          | Current purpose                                |
 | ------------------------------ | ---------------------------------------------- |
@@ -15,9 +15,14 @@ The Next.js site and FastAPI routes run together under one origin. Supabase emai
 | `/login`                       | Sign in                                        |
 | `/auth/callback`               | Complete the emailed signup link               |
 | `/dashboard`                   | Private workspace and sign-out control         |
+| `/dashboard/companies`         | Company records and statement trends           |
+| `/dashboard/analysis`          | Stored financial metrics and charts            |
+| `/dashboard/validation`        | Validation, review queue, and audit history    |
+| `/dashboard/reports`           | On-demand Excel export and report status       |
 | `/api/health`                  | Public FastAPI availability check              |
 | `/api/documents`               | Reserve an upload or list your documents       |
 | `/api/documents/{id}/complete` | Verify a finished upload                       |
+| `/api/reports/excel`           | Authenticated Excel download for a company     |
 
 The planned workflow is to upload a PDF, Excel, or CSV statement, organize its line items and periods, validate the numbers, review uncertain mappings, and produce analysis with links back to the source.
 
@@ -124,6 +129,22 @@ Return and turnover ratios prefer opening and ending balance-sheet values from t
 
 Missing opening balances use the ending balance with a warning. Missing accepted inputs, conflicting currencies, negative average balances, and nonpositive revenue or cost of revenue leave affected day measures unavailable; CCC needs all three. Results include formula IDs, inputs, source references, periods, day counts, and warnings. These are Python calculations only; upload processing and dashboard display are still to be connected.
 
+## Cash flow and commentary
+
+`finance.calculate_cash_flow(...)` reads accepted operating, investing, and financing cash flows. It treats capital expenditure as a signed negative outflow: free cash flow is operating cash flow plus that negative amount. A positive CapEx amount blocks free cash flow until its sign is reviewed. It also calculates the difference between CFO and net income and, when net income is positive, their ratio. `finance.compare_cash_flow(...)` compares two explicitly chosen periods; unavailable inputs remain unavailable. The existing free-cash-flow growth calculation now blocks positive CapEx too.
+
+`finance.generate_commentary(...)` writes factual observations from calculated growth, margins, cash flows, and working-capital measures. Each statement includes the observed values and source references. It does not infer causes or give investment advice.
+
+## Dashboard, reports, and audit history
+
+The dashboard now has document detail, company, analysis, validation, and reports pages. It reads the signed-in account's Supabase rows, shows loading/error/empty states, and charts stored metrics using Recharts. A metric without source-line references in its metadata is marked as lacking provenance and is excluded from charts. The document page links back to the original private file with a short-lived link and shows original labels, values, source coordinates, and review status. Until upload processing saves statements and metrics, these analysis views will remain empty.
+
+`reports.build_excel_report(...)` generates the eleven-sheet workbook described in the plan. `GET /api/reports/excel?company_id=<id>` checks the user's session and company ownership, reads accepted source-linked statements, recalculates analysis, and returns a private download. The workbook includes normalized amounts, original values, source locations, validation, methodology, and a generated time. It contains static calculation snapshots, not hidden Excel formulas or external links. On-demand downloads are not saved in the `reports` table.
+
+`validation.quality.data_quality_report(...)` returns six separate indicators: statement detection confidence, mapping completeness, core-field completeness, validation checks passed, unresolved review items, and source coverage. It does not create a combined score. `validation.quality.trace_metric(...)` checks the path from a calculated metric to accepted normalized values, original values, source coordinates, and document IDs. The validation page displays the available database indicators and recent audit events.
+
+The review form calls an authenticated Supabase function. An accepted correction checks the field against the statement taxonomy, updates the mapping and line item in one transaction, marks dependent analysis stale, and records before/after audit events with actor, time, and reason. The original extracted label and value remain on the line item. The migration `20260926000200_phase21_review_audit.sql` must be applied before review actions and new quality fields are available in production.
+
 Supabase allows both the local and production `/auth/callback` URLs as Auth redirects. Its default confirmation email returns to the matching site; the browser client stores the session in cookies before opening the dashboard. Keep database passwords and server keys out of browser code and the repository.
 
 ## Checks
@@ -151,9 +172,9 @@ On macOS or Linux, use `.venv/bin/python` in place of `.\.venv\Scripts\python.ex
 - `api/index.py` — FastAPI entry point
 - `ingestion/` — source validation and common extracted-document types
 - `extraction/` — PDF, XLSX, and CSV readers
-- `finance/` — statement detection, ratios, horizontal and common-size analysis
+- `finance/` — statement detection, ratios, cash flow, trends, working capital, and commentary
 - `normalization/` — canonical fields, conservative label mapping, and amount/period normalization
-- `validation/` — deterministic financial checks; `reports/` — later reports
+- `validation/` — deterministic checks, quality indicators, and audit records; `reports/` — Excel generator
 - `supabase/migrations/` — database and private storage setup
 - `tests/` — API and ingestion tests with local fixtures
 
