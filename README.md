@@ -6,7 +6,7 @@ The goal is a workflow an analyst can inspect. If a line item is unclear or a st
 
 ## Where the project stands
 
-The Next.js site and FastAPI routes run together under one origin. Supabase email/password accounts protect the dashboard, and each new account gets a profile row. Signed-in users can upload PDF, XLSX, and CSV documents directly to a private Supabase Storage bucket. Python modules can extract their content and identify likely income statements, balance sheets, and cash flow statements with source-linked evidence. Running those modules against uploaded files, analysis, and reports are still to come.
+The Next.js site and FastAPI routes run together under one origin. Supabase email/password accounts protect the dashboard, and each new account gets a profile row. Signed-in users can upload PDF, XLSX, and CSV documents directly to a private Supabase Storage bucket. Python modules can extract their content and identify likely income statements, balance sheets, and cash flow statements with source-linked evidence. A documented set of financial fields gives later analysis consistent names. Running those modules against uploaded files, analysis, and reports are still to come.
 
 | Route                          | Current purpose                                |
 | ------------------------------ | ---------------------------------------------- |
@@ -76,6 +76,12 @@ This is a Python building block, not an automatic processing job yet. An upload 
 
 Detection currently runs in Python only. It does not update the database or classify files as part of the upload flow. Periods, currency, line-item mapping, and accounting validation belong to later phases.
 
+## Canonical financial fields
+
+`normalization.taxonomy` defines 52 fields across the income statement, balance sheet, and cash flow statement. Each field has a stable machine name, a readable name, an accounting definition, example source labels, a sign convention, and an instant or duration basis. The same name can have a different role in different statements: `net_income` on an income statement is the period's final profit or loss, while `net_income` on a cash flow statement is an optional line in an indirect reconciliation.
+
+The `required` flag identifies core fields this project will look for when judging completeness of a typical non-financial company statement. It is not a rule that every company must disclose that line. Sign notes describe the values the application will use after normalization; source files can display outflows and expenses differently. Aliases are reference examples for the next phase, not automatic matches. `get_field(statement_type, machine_name)` looks up an exact canonical key.
+
 Supabase allows both the local and production `/auth/callback` URLs as Auth redirects. Its default confirmation email returns to the matching site; the browser client stores the session in cookies before opening the dashboard. Keep database passwords and server keys out of browser code and the repository.
 
 ## Checks
@@ -104,7 +110,8 @@ On macOS or Linux, use `.venv/bin/python` in place of `.\.venv\Scripts\python.ex
 - `ingestion/` — source validation and common extracted-document types
 - `extraction/` — PDF, XLSX, and CSV readers
 - `finance/` — rule-based statement detection; later calculations
-- `normalization/`, `validation/`, `reports/` — later processing packages
+- `normalization/` — canonical field definitions; source-label mapping comes later
+- `validation/`, `reports/` — later processing packages
 - `supabase/migrations/` — database and private storage setup
 - `tests/` — API and ingestion tests with local fixtures
 
