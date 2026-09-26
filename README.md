@@ -6,14 +6,16 @@ The goal is a workflow an analyst can inspect. If a line item is unclear or a st
 
 ## Where the project stands
 
-The Next.js site and FastAPI health route run together under one origin. The site has public home, sign-in, and dashboard routes; authentication and private financial data are not active yet. A Supabase Free project has the database schema and private document bucket ready for later phases. Uploads, extraction, analysis, and reports are still to come.
+The Next.js site and FastAPI health route run together under one origin. Supabase email/password accounts protect the dashboard, and each new account gets a profile row. A Supabase Free project has the database schema and private document bucket ready for later phases. Uploads, extraction, analysis, and reports are still to come.
 
-| Route         | Current purpose                                       |
-| ------------- | ----------------------------------------------------- |
-| `/`           | Project landing page and API connection status        |
-| `/login`      | Sign-in placeholder for the authentication phase      |
-| `/dashboard`  | Empty workspace placeholder and API connection status |
-| `/api/health` | Public FastAPI availability check                     |
+| Route            | Current purpose                                |
+| ---------------- | ---------------------------------------------- |
+| `/`              | Project landing page and API connection status |
+| `/signup`        | Create an email/password account               |
+| `/login`         | Sign in                                        |
+| `/auth/callback` | Complete the emailed signup link               |
+| `/dashboard`     | Private workspace and sign-out control         |
+| `/api/health`    | Public FastAPI availability check              |
 
 The planned workflow is to upload a PDF, Excel, or CSV statement, organize its line items and periods, validate the numbers, review uncertain mappings, and produce analysis with links back to the source.
 
@@ -48,7 +50,11 @@ Open [http://localhost:3000](http://localhost:3000). The page checks [http://loc
 
 ## Environment variables
 
-`.env.example` lists the public Supabase settings and later server-only settings. A local `.env.local` is ignored by Git. The Phase 4 pages do not use Supabase credentials yet; those values will be used when authentication is built. Keep database passwords and server keys out of browser code and the repository.
+Copy `.env.example` to `.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the Supabase project. Set `NEXT_PUBLIC_SITE_URL` to `http://localhost:3000` for local development. Set the same Supabase values and the production site URL in Vercel. `.env.local` is ignored by Git.
+
+The publishable key identifies the Supabase project; it is safe to include in browser code because permissions still come from the signed-in user's JWT and database row-level security. A service-role key bypasses row-level security and must stay on the server. Phase 5 does not need one. The browser and server share the user's session through cookies, which the server verifies before showing the dashboard. The profile row is created by the Phase 3 database trigger when Supabase creates a user.
+
+Supabase allows both the local and production `/auth/callback` URLs as Auth redirects. Its default confirmation email returns to the matching site; the browser client stores the session in cookies before opening the dashboard. Keep database passwords and server keys out of browser code and the repository.
 
 ## Checks
 

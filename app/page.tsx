@@ -9,8 +9,8 @@ export default function HomePage() {
         <h1>Know where every number came from.</h1>
         <p className="description">
           A workspace for turning financial documents into checked, traceable
-          statements and analysis. The foundation is live; accounts and document
-          uploads come next.
+          statements and analysis. Private accounts are ready; document uploads
+          come next.
         </p>
         <div className="actions">
           <Link className="button button--primary" href="/dashboard">

@@ -20,6 +20,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <Link href="/">Home</Link>
             <Link href="/dashboard">Dashboard</Link>
             <Link href="/login">Sign in</Link>
+            <Link href="/signup">Create account</Link>
           </nav>
         </header>
         {children}

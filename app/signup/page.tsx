@@ -1,9 +1,9 @@
 import { AuthForm } from "../components/auth-form";
 
-export default function LoginPage() {
+export default function SignupPage() {
   return (
     <main className="page page--auth">
-      <AuthForm mode="sign-in" />
+      <AuthForm mode="sign-up" />
     </main>
   );
 }
