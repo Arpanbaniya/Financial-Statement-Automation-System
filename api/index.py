@@ -2,10 +2,12 @@
 
 from fastapi import FastAPI
 
+from api.ai import router as ai_router
 from api.documents import router as documents_router
 from api.reports import router as reports_router
 
 app = FastAPI(title="Financial Statement Automation API")
+app.include_router(ai_router)
 app.include_router(documents_router)
 app.include_router(reports_router)
 

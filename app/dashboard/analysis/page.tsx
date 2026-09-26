@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AiExplanation } from "../../components/ai-explanation";
 import { MetricChart, type ChartPoint } from "../../components/metric-chart";
 import {
   metricPrimaryPeriodType,
@@ -214,6 +215,11 @@ export default async function AnalysisPage({
               }
             />
           </section>
+          <AiExplanation
+            companyId={selected.id}
+            focus={tab}
+            hasMetrics={visible.length > 0}
+          />
           <section className="workspace-card">
             <h2>Calculated values</h2>
             {!visible.length ? (

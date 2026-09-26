@@ -25,7 +25,7 @@ pnpm install
 pnpm dev
 ```
 
-Open `http://localhost:3000`. Keep `SUPABASE_SECRET_KEY` server-side. To use the optional SEC adapter, set `SEC_USER_AGENT` to a name and contact email.
+Open `http://localhost:3000`. Keep `SUPABASE_SECRET_KEY` server-side. Set `SEC_USER_AGENT` to use the SEC adapter, or `GROQ_API_KEY` for optional explanations.
 
 ## Checks
 
