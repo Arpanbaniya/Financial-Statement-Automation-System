@@ -220,6 +220,8 @@ export default async function DocumentDetailPage({
                               ? `Page ${item.source_page}`
                               : item.source_sheet
                                 ? `${item.source_sheet}${item.source_cell ? `!${item.source_cell}` : ""}`
+                                : item.source_cell
+                                  ? `CSV!${item.source_cell}`
                                 : "Location unavailable"}
                           </td>
                           <td>{label(item.review_status)}</td>
