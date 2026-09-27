@@ -20,10 +20,17 @@ async function callDocument(path: string, method: string, body?: object) {
   });
   if (response.ok) return;
   const result = await response.json().catch(() => ({}));
+  const validation = Array.isArray(result.detail)
+    ? result.detail
+        .map((issue: { loc?: string[]; msg?: string }) =>
+          `${issue.loc?.at(-1) || "Field"}: ${issue.msg || "Invalid value"}`,
+        )
+        .join("; ")
+    : null;
   throw new Error(
     typeof result.detail === "string"
       ? result.detail
-      : "Request failed. Try again.",
+      : validation || "Request failed. Try again.",
   );
 }
 
@@ -48,16 +55,17 @@ export function DocumentActions({
 
   async function process(event: React.FormEvent) {
     event.preventDefault();
+    const form = new FormData(event.currentTarget as HTMLFormElement);
     setBusy(true);
     setMessage("Reading your document and checking the numbers…");
     try {
       await callDocument(`/api/documents/${id}/process`, "POST", {
-        company_id: companyId,
-        period_start: periodStart || null,
-        period_end: periodEnd,
-        currency: currency.toUpperCase(),
-        unit_scale: unitScale,
-        value_column: valueColumn.toUpperCase(),
+        company_id: String(form.get("company_id") || ""),
+        period_start: String(form.get("period_start") || "") || null,
+        period_end: String(form.get("period_end") || ""),
+        currency: String(form.get("currency") || "").toUpperCase(),
+        unit_scale: String(form.get("unit_scale") || ""),
+        value_column: String(form.get("value_column") || "").toUpperCase(),
       });
       setMessage("Processing complete. Review the saved results below.");
       router.refresh();
@@ -106,6 +114,7 @@ export function DocumentActions({
             <label>
               Company
               <select
+                name="company_id"
                 required
                 value={companyId}
                 onChange={(event) => setCompanyId(event.target.value)}
@@ -121,6 +130,7 @@ export function DocumentActions({
               Period start <span>(income and cash flow)</span>
               <input
                 type="date"
+                name="period_start"
                 value={periodStart}
                 onChange={(event) => setPeriodStart(event.target.value)}
               />
@@ -129,6 +139,7 @@ export function DocumentActions({
               Period end
               <input
                 type="date"
+                name="period_end"
                 required
                 value={periodEnd}
                 onChange={(event) => setPeriodEnd(event.target.value)}
@@ -137,6 +148,7 @@ export function DocumentActions({
             <label>
               Currency
               <input
+                name="currency"
                 required
                 maxLength={3}
                 pattern="[A-Za-z]{3}"
@@ -147,6 +159,7 @@ export function DocumentActions({
             <label>
               Amounts shown in
               <select
+                name="unit_scale"
                 value={unitScale}
                 onChange={(event) => setUnitScale(event.target.value)}
               >
@@ -159,6 +172,7 @@ export function DocumentActions({
             <label>
               Amount column <span>(A, B, C…)</span>
               <input
+                name="value_column"
                 required
                 maxLength={2}
                 pattern="[A-Za-z]{1,2}"

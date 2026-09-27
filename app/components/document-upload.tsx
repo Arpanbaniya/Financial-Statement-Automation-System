@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as tus from "tus-js-client";
 import Link from "next/link";
 import { createClient } from "../../lib/supabase/client";
+import { formatFileSize } from "../../lib/workspace";
 
 type DocumentRow = {
   id: string;
@@ -288,7 +289,7 @@ export function DocumentUpload() {
         </strong>
         <span>
           {file
-            ? `${(file.size / 1024).toFixed(0)} KB · Ready to upload`
+            ? `${formatFileSize(file.size)} · Ready to upload`
             : "PDF, XLSX or CSV · up to 10 MB"}
         </span>
       </label>
@@ -323,7 +324,7 @@ export function DocumentUpload() {
                 {row.original_filename}
               </Link>
               <small>
-                {(row.file_size / 1024).toFixed(0)} KB ·{" "}
+                {formatFileSize(row.file_size)} ·{" "}
                 {row.status.replaceAll("_", " ")}
               </small>
             </li>

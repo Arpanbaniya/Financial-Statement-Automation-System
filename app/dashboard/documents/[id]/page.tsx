@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DocumentActions } from "../../../components/document-actions";
 import { requireWorkspace } from "../../../../lib/require-workspace";
-import { formatDate, formatNumber, label } from "../../../../lib/workspace";
+import { formatDate, formatFileSize, formatNumber, label } from "../../../../lib/workspace";
 
 export default async function DocumentDetailPage({
   params,
@@ -85,7 +85,7 @@ export default async function DocumentDetailPage({
           <span>Upload status</span>
         </div>
         <div className="stat-card">
-          <strong>{formatNumber(document.file_size / 1024, 0)} KB</strong>
+          <strong>{formatFileSize(document.file_size)}</strong>
           <span>File size</span>
         </div>
         <div className="stat-card">

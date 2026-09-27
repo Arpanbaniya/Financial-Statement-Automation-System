@@ -10,6 +10,12 @@ export function formatNumber(value: number | null, digits = 1): string {
   }).format(value);
 }
 
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${formatNumber(bytes / 1024, 1)} KB`;
+  return `${formatNumber(bytes / (1024 * 1024), 1)} MB`;
+}
+
 export function formatDate(value: string): string {
   const date = new Date(`${value.slice(0, 10)}T00:00:00Z`);
   return Number.isNaN(date.getTime())
