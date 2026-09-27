@@ -1,6 +1,7 @@
 """Small source documents with amounts that can be checked by hand."""
 
 from io import BytesIO
+from pathlib import Path
 from uuid import uuid4
 
 import httpx
@@ -87,6 +88,26 @@ def test_xlsx_pipeline_and_textless_pdf_are_handled_without_guessing() -> None:
     )
     assert statements == []
     assert unresolved
+
+
+def test_committed_demo_statement_has_hand_checked_income_lines() -> None:
+    source = Path("tests/fixtures/smoke_income_2025.csv").read_bytes()
+    statements, unresolved = _records(
+        source,
+        "smoke_income_2025.csv",
+        "text/csv",
+        request(),
+    )
+    assert not unresolved
+    lines = {row["canonical_name"]: row for row in statements[0]["lines"]}
+    assert int(lines["revenue"]["normalized_value"]) - int(
+        lines["cost_of_revenue"]["normalized_value"]
+    ) == int(lines["gross_profit"]["normalized_value"])
+    assert int(lines["operating_income"]["normalized_value"]) - int(
+        lines["interest_expense"]["normalized_value"]
+    ) - int(lines["income_tax"]["normalized_value"]) == int(
+        lines["net_income"]["normalized_value"]
+    )
 
 
 def test_processing_persists_lines_checks_and_metrics(monkeypatch) -> None:
