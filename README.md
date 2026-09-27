@@ -38,4 +38,6 @@ pnpm build
 
 This is a portfolio project, not investment advice. Use public or synthetic statements for the demo. Scanned PDFs may need OCR, and multi-column statements require choosing the correct amount column before processing.
 
+[Interview notes](docs/interview-prep.txt) cover the accounting, analysis, data, security, and AI choices.
+
 MIT licensed.

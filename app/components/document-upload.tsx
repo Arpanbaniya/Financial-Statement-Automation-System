@@ -257,20 +257,41 @@ export function DocumentUpload() {
         For this public demo, use public or synthetic statements. Please do not
         upload confidential financial records.
       </p>
-      <label className="upload-label" htmlFor="document-file">
-        Choose a financial statement
-      </label>
-      <input
-        id="document-file"
-        type="file"
-        accept=".pdf,.xlsx,.csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-        disabled={busy}
-        onChange={(event) => {
-          setFile(event.target.files?.[0] || null);
+      <label
+        className="file-drop"
+        htmlFor="document-file"
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          event.preventDefault();
+          if (busy) return;
+          setFile(event.dataTransfer.files[0] || null);
           setError("");
           setProgress(0);
         }}
-      />
+      >
+        <input
+          id="document-file"
+          type="file"
+          accept=".pdf,.xlsx,.csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+          disabled={busy}
+          onChange={(event) => {
+            setFile(event.target.files?.[0] || null);
+            setError("");
+            setProgress(0);
+          }}
+        />
+        <span className="file-drop__icon" aria-hidden="true">
+          ↑
+        </span>
+        <strong>
+          {file ? file.name : "Choose a statement or drop it here"}
+        </strong>
+        <span>
+          {file
+            ? `${(file.size / 1024).toFixed(0)} KB · Ready to upload`
+            : "PDF, XLSX or CSV · up to 10 MB"}
+        </span>
+      </label>
       <button
         className="button button--primary"
         type="button"

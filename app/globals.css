@@ -966,6 +966,61 @@ h1 {
 .section-heading h2 {
   margin-bottom: 0.8rem;
 }
+.privacy-note {
+  padding-left: 0.8rem;
+  border-left: 3px solid #ddb18c;
+  font-size: 0.85rem;
+}
+.file-drop {
+  position: relative;
+  display: flex;
+  min-height: 10rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1.3rem 0 1rem;
+  padding: 1.5rem;
+  border: 1.5px dashed #a4c3ad;
+  border-radius: 0.9rem;
+  background: #f8fbf7;
+  color: #254e39;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+.file-drop:hover,
+.file-drop:focus-within {
+  border-color: #2b7350;
+  background: #f1f7f0;
+}
+.file-drop input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+.file-drop__icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
+  background: #e1efe2;
+  font-size: 1.2rem;
+}
+.file-drop strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}
+.file-drop > span:last-child {
+  color: #799083;
+  font-size: 0.75rem;
+}
 
 @media (max-width: 58rem) {
   .hero {
