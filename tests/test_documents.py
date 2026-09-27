@@ -116,6 +116,12 @@ def test_document_routes_require_authentication(api) -> None:
     assert api.client.get("/api/documents").status_code == 401
     assert api.client.post("/api/documents", json=PAYLOAD).status_code == 401
     assert api.client.post(f"/api/documents/{DOCUMENT_ID}/complete").status_code == 401
+    assert api.client.delete(f"/api/documents/{DOCUMENT_ID}").status_code == 401
+    assert (
+        api.client.post(f"/api/documents/{DOCUMENT_ID}/process", json={}).status_code
+        == 401
+    )
+    assert api.client.get(f"/api/processing-jobs/{uuid4()}").status_code == 401
 
 
 def test_reservation_rejects_bad_extensions_and_mime(api) -> None:
@@ -207,3 +213,82 @@ def test_expired_reservation_is_cleaned_on_document_request(api) -> None:
     assert response.status_code == 200
     assert response.json() == []
     assert api.rows == []
+
+
+def test_owner_only_delete_removes_private_object_and_row(api) -> None:
+    api.rows.append(
+        {
+            "id": DOCUMENT_ID,
+            "user_id": USER_ID,
+            "storage_path": PATH,
+            "status": "uploaded",
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+    )
+    endpoint = f"/api/documents/{DOCUMENT_ID}"
+    assert (
+        api.client.delete(
+            endpoint, headers={"Authorization": "Bearer other"}
+        ).status_code
+        == 404
+    )
+    assert len(api.rows) == 1
+    assert (
+        api.client.delete(
+            endpoint, headers={"Authorization": "Bearer owner"}
+        ).status_code
+        == 204
+    )
+    assert api.rows == []
+
+
+def test_other_user_cannot_start_processing(api) -> None:
+    api.rows.append(
+        {
+            "id": DOCUMENT_ID,
+            "user_id": USER_ID,
+            "storage_path": PATH,
+            "status": "uploaded",
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+    )
+    payload = {
+        "company_id": str(uuid4()),
+        "period_start": "2025-01-01",
+        "period_end": "2025-12-31",
+        "currency": "USD",
+        "unit_scale": "ones",
+        "value_column": "B",
+    }
+    response = api.client.post(
+        f"/api/documents/{DOCUMENT_ID}/process",
+        json=payload,
+        headers={"Authorization": "Bearer other"},
+    )
+    assert response.status_code == 404
+    assert api.rows[0]["status"] == "uploaded"
+
+
+def test_daily_reservation_limit_is_owner_scoped(api) -> None:
+    for _ in range(20):
+        api.rows.append(
+            {
+                "id": str(uuid4()),
+                "user_id": USER_ID,
+                "status": "uploaded",
+                "created_at": datetime.now(UTC).isoformat(),
+            }
+        )
+    response = api.client.post(
+        "/api/documents",
+        json=PAYLOAD,
+        headers={"Authorization": "Bearer owner"},
+    )
+    assert response.status_code == 429
+    assert len(api.rows) == 20
+    other = api.client.post(
+        "/api/documents",
+        json=PAYLOAD,
+        headers={"Authorization": "Bearer other"},
+    )
+    assert other.status_code == 201

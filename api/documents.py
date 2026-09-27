@@ -246,6 +246,21 @@ async def reserve_document(
                         "storage_path": match["storage_path"],
                         "status": "reserved",
                     }
+            recent = await _documents(
+                client,
+                url,
+                key,
+                {
+                    "select": "id",
+                    "user_id": f"eq.{user_id}",
+                    "created_at": f"gte.{datetime.now(UTC).date().isoformat()}",
+                    "limit": "20",
+                },
+            )
+            if len(recent) >= 20:
+                raise HTTPException(
+                    status_code=429, detail="Daily upload limit reached"
+                )
             document_id = str(uuid4())
             storage_path = f"{user_id}/{document_id}/{_safe_filename(payload.filename)}"
             response = await client.post(
@@ -372,3 +387,77 @@ async def complete_document(document_id: UUID, user_id: UserId) -> dict[str, str
             status_code=502, detail="Document service is unavailable"
         ) from exc
     return {"document_id": str(document_id), "status": "uploaded"}
+
+
+@router.delete("/{document_id}", status_code=204)
+async def delete_document(document_id: UUID, user_id: UserId) -> None:
+    """Remove the private object before cascading its database records."""
+    url, _, key = _configuration()
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            documents = await _documents(
+                client,
+                url,
+                key,
+                {
+                    "select": "id,storage_path,status",
+                    "id": f"eq.{document_id}",
+                    "user_id": f"eq.{user_id}",
+                    "limit": "1",
+                },
+            )
+            if not documents:
+                raise HTTPException(status_code=404, detail="Document not found")
+            document = documents[0]
+            if document["status"] == "processing":
+                raise HTTPException(
+                    status_code=409, detail="Wait for processing to finish"
+                )
+            path = document["storage_path"]
+            if not path.startswith(f"{user_id}/{document_id}/"):
+                raise HTTPException(
+                    status_code=409, detail="Invalid document storage path"
+                )
+            claim = await client.patch(
+                f"{url}/rest/v1/documents",
+                params={
+                    "id": f"eq.{document_id}",
+                    "user_id": f"eq.{user_id}",
+                    "status": f"eq.{document['status']}",
+                    "select": "id",
+                },
+                headers=_service_headers(key, return_rows=True),
+                json={"status": "deleting"},
+            )
+            if not _upstream(claim):
+                raise HTTPException(status_code=409, detail="Document state changed")
+            removal = await client.request(
+                "DELETE",
+                f"{url}/storage/v1/object/{BUCKET}",
+                headers=_service_headers(key),
+                json={"prefixes": [path]},
+            )
+            if removal.is_error:
+                await client.patch(
+                    f"{url}/rest/v1/documents",
+                    params={"id": f"eq.{document_id}", "user_id": f"eq.{user_id}"},
+                    headers=_service_headers(key),
+                    json={"status": "delete_failed"},
+                )
+                raise HTTPException(
+                    status_code=502, detail="Private file could not be removed"
+                )
+            deletion = await client.delete(
+                f"{url}/rest/v1/documents",
+                params={
+                    "id": f"eq.{document_id}",
+                    "user_id": f"eq.{user_id}",
+                    "status": "eq.deleting",
+                },
+                headers=_service_headers(key),
+            )
+            _upstream(deletion)
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=502, detail="Document service is unavailable"
+        ) from exc
