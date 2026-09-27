@@ -1,0 +1,208 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useState } from "react";
+import { createClient } from "../../lib/supabase/client";
+
+type Company = { id: string; name: string };
+
+async function callDocument(path: string, method: string, body?: object) {
+  const { data } = await createClient().auth.getSession();
+  if (!data.session) throw new Error("Your session expired. Sign in again.");
+  const response = await fetch(path, {
+    method,
+    headers: {
+      Authorization: `Bearer ${data.session.access_token}`,
+      ...(body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (response.ok) return;
+  const result = await response.json().catch(() => ({}));
+  throw new Error(
+    typeof result.detail === "string"
+      ? result.detail
+      : "Request failed. Try again.",
+  );
+}
+
+export function DocumentActions({
+  id,
+  status,
+  companies,
+}: {
+  id: string;
+  status: string;
+  companies: Company[];
+}) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [companyId, setCompanyId] = useState(companies[0]?.id || "");
+  const [periodStart, setPeriodStart] = useState("");
+  const [periodEnd, setPeriodEnd] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [unitScale, setUnitScale] = useState("ones");
+  const [valueColumn, setValueColumn] = useState("B");
+
+  async function process(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("Reading your document and checking the numbers…");
+    try {
+      await callDocument(`/api/documents/${id}/process`, "POST", {
+        company_id: companyId,
+        period_start: periodStart || null,
+        period_end: periodEnd,
+        currency: currency.toUpperCase(),
+        unit_scale: unitScale,
+        value_column: valueColumn.toUpperCase(),
+      });
+      setMessage("Processing complete. Review the saved results below.");
+      router.refresh();
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : "Processing failed.");
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (
+      !window.confirm(
+        "Delete this document, its private file, and all related results?",
+      )
+    )
+      return;
+    setBusy(true);
+    setMessage("Deleting document…");
+    try {
+      await callDocument(`/api/documents/${id}`, "DELETE");
+      router.push("/dashboard");
+      router.refresh();
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : "Delete failed.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="workspace-card document-actions">
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">Next step</p>
+          <h2>Process this document</h2>
+        </div>
+      </div>
+      {(status === "uploaded" || status === "failed") &&
+        (companies.length ? (
+          <form className="metadata-form" onSubmit={process}>
+            <p>
+              Confirm the column and reporting details before processing. The
+              app will flag uncertain figures for review.
+            </p>
+            <label>
+              Company
+              <select
+                required
+                value={companyId}
+                onChange={(event) => setCompanyId(event.target.value)}
+              >
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Period start <span>(income and cash flow)</span>
+              <input
+                type="date"
+                value={periodStart}
+                onChange={(event) => setPeriodStart(event.target.value)}
+              />
+            </label>
+            <label>
+              Period end
+              <input
+                type="date"
+                required
+                value={periodEnd}
+                onChange={(event) => setPeriodEnd(event.target.value)}
+              />
+            </label>
+            <label>
+              Currency
+              <input
+                required
+                maxLength={3}
+                pattern="[A-Za-z]{3}"
+                value={currency}
+                onChange={(event) => setCurrency(event.target.value)}
+              />
+            </label>
+            <label>
+              Amounts shown in
+              <select
+                value={unitScale}
+                onChange={(event) => setUnitScale(event.target.value)}
+              >
+                <option value="ones">Units</option>
+                <option value="thousands">Thousands</option>
+                <option value="millions">Millions</option>
+                <option value="billions">Billions</option>
+              </select>
+            </label>
+            <label>
+              Amount column <span>(A, B, C…)</span>
+              <input
+                required
+                maxLength={2}
+                pattern="[A-Za-z]{1,2}"
+                value={valueColumn}
+                onChange={(event) => setValueColumn(event.target.value)}
+              />
+            </label>
+            <button
+              className="button button--primary"
+              type="submit"
+              disabled={busy}
+            >
+              Process document
+            </button>
+          </form>
+        ) : (
+          <p>
+            Create a company record first, then return here to process this
+            file.
+          </p>
+        ))}
+      {!companies.length && (
+        <Link href="/dashboard/companies">Go to companies</Link>
+      )}
+      {status !== "uploaded" && status !== "failed" && (
+        <p>
+          {status === "processing"
+            ? "Processing is in progress. Refresh shortly."
+            : "Processing has already run or the upload is not complete."}
+        </p>
+      )}
+      <button
+        className="button button--danger"
+        type="button"
+        onClick={remove}
+        disabled={busy || status === "processing"}
+      >
+        Delete document and results
+      </button>
+      {message && (
+        <p role="status" className="form-message">
+          {message}
+        </p>
+      )}
+    </section>
+  );
+}

@@ -30,15 +30,31 @@ export type Database = {
         };
         Relationships: [];
       };
-      companies: ReadOnlyTable<{
-        id: string;
-        user_id: string;
-        name: string;
-        ticker: string | null;
-        country: string | null;
-        industry: string | null;
-        created_at: string;
-      }>;
+      companies: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          ticker: string | null;
+          country: string | null;
+          industry: string | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          name: string;
+          ticker?: string | null;
+          country?: string | null;
+          industry?: string | null;
+        };
+        Update: {
+          name?: string;
+          ticker?: string | null;
+          country?: string | null;
+          industry?: string | null;
+        };
+        Relationships: [];
+      };
       documents: ReadOnlyTable<{
         id: string;
         user_id: string;

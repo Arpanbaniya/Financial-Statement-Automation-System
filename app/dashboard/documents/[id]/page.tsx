@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DocumentActions } from "../../../components/document-actions";
 import { requireWorkspace } from "../../../../lib/require-workspace";
 import { formatDate, formatNumber, label } from "../../../../lib/workspace";
 
@@ -25,7 +26,7 @@ export default async function DocumentDetailPage({
         <p role="alert">Document could not be loaded.</p>
       </main>
     );
-  const [statements, jobs, checks, signed] = await Promise.all([
+  const [statements, jobs, checks, signed, companies] = await Promise.all([
     supabase
       .from("financial_statements")
       .select(
@@ -51,6 +52,11 @@ export default async function DocumentDetailPage({
     supabase.storage
       .from("financial-documents")
       .createSignedUrl(document.storage_path, 60),
+    supabase
+      .from("companies")
+      .select("id,name")
+      .eq("user_id", user.id)
+      .order("name"),
   ]);
   const statementIds = (statements.data || []).map((item) => item.id);
   const items = statementIds.length
@@ -119,6 +125,11 @@ export default async function DocumentDetailPage({
           </p>
         )}
       </section>
+      <DocumentActions
+        id={id}
+        status={document.status}
+        companies={companies.data || []}
+      />
       <section className="workspace-card">
         <h2>Extraction and processing</h2>
         {!jobs.data?.length ? (

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as tus from "tus-js-client";
+import Link from "next/link";
 import { createClient } from "../../lib/supabase/client";
 
 type DocumentRow = {
@@ -178,7 +179,9 @@ export function DocumentUpload() {
           freshToken,
           { method: "POST" },
         );
-        setPhase("Uploaded. Processing will be added next.");
+        setPhase(
+          "Uploaded. Open the document to confirm its reporting details.",
+        );
         setProgress(100);
         setFile(null);
         await refresh();
@@ -250,6 +253,10 @@ export function DocumentUpload() {
         Upload one PDF, XLSX, or CSV file at a time, up to 10 MB. Files are
         private to your account.
       </p>
+      <p className="privacy-note">
+        For this public demo, use public or synthetic statements. Please do not
+        upload confidential financial records.
+      </p>
       <label className="upload-label" htmlFor="document-file">
         Choose a financial statement
       </label>
@@ -291,7 +298,9 @@ export function DocumentUpload() {
         <ul className="document-list">
           {rows.map((row) => (
             <li key={row.id}>
-              <span>{row.original_filename}</span>
+              <Link href={`/dashboard/documents/${row.id}`}>
+                {row.original_filename}
+              </Link>
               <small>
                 {(row.file_size / 1024).toFixed(0)} KB ·{" "}
                 {row.status.replaceAll("_", " ")}

@@ -115,8 +115,7 @@ export default async function DashboardPage({
             <h2>Recent processing</h2>
             {!jobs.data?.length ? (
               <p>
-                No processing jobs yet. Uploaded files are waiting for the
-                processing workflow.
+                No processing jobs yet. Open an uploaded document to start one.
               </p>
             ) : (
               <ul className="plain-list">

@@ -14,7 +14,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <header className="site-header">
           <Link className="brand" href="/">
-            Financial Statements
+            <span className="brand__mark" aria-hidden="true">
+              F
+            </span>
+            <span>
+              Financial <span className="brand__accent">Statements</span>
+              <small>Automation workspace</small>
+            </span>
           </Link>
           <nav className="site-nav" aria-label="Main navigation">
             <Link href="/">Home</Link>
