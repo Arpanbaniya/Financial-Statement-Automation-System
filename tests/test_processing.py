@@ -1,10 +1,12 @@
 """Small source documents with amounts that can be checked by hand."""
 
+from datetime import date
 from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 from openpyxl import Workbook
 from pypdf import PdfWriter
@@ -108,6 +110,39 @@ def test_committed_demo_statement_has_hand_checked_income_lines() -> None:
     ) - int(lines["income_tax"]["normalized_value"]) == int(
         lines["net_income"]["normalized_value"]
     )
+
+
+@pytest.mark.parametrize(
+    ("year", "extension", "mime"),
+    [
+        (
+            2024,
+            "xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ),
+        (2023, "pdf", "application/pdf"),
+    ],
+)
+def test_demo_files_extract_accepted_income_statements(
+    year: int, extension: str, mime: str
+) -> None:
+    path = Path(f"tests/fixtures/smoke_income_{year}.{extension}")
+    payload = ProcessRequest(
+        company_id=uuid4(),
+        period_start=date(year, 1, 1),
+        period_end=date(year, 12, 31),
+        currency="USD",
+        unit_scale="ones",
+        value_column="B",
+    )
+    statements, unresolved = _records(path.read_bytes(), path.name, mime, payload)
+    assert not unresolved
+    assert len(statements) == 1
+    assert statements[0]["status"] == "accepted"
+    lines = {row["canonical_name"]: row for row in statements[0]["lines"]}
+    assert lines["revenue"]["normalized_value"] == "1000"
+    assert lines["gross_profit"]["normalized_value"] == "400"
+    assert lines["net_income"]["normalized_value"] == "135"
 
 
 def test_processing_persists_lines_checks_and_metrics(monkeypatch) -> None:
