@@ -14,20 +14,20 @@ type Fact = {
 };
 
 type Result = {
-  mode: "ai" | "facts_only";
+  provider: "groq" | "deterministic";
+  fallback_used: boolean;
+  text: string;
   period_end: string;
   facts: Fact[];
-  notes: { fact_id: string; text: string }[];
+  notes: { fact_id: string; kind: "observation" | "question"; text: string }[];
 };
 
 export function AiExplanation({
   companyId,
   focus,
-  hasMetrics,
 }: {
   companyId: string;
   focus: string;
-  hasMetrics: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -73,39 +73,30 @@ export function AiExplanation({
     }
   }
 
-  const facts = new Map(result?.facts.map((fact) => [fact.id, fact]));
   return (
     <section className="workspace-card">
       <h2>Explain these results</h2>
       <p>
-        This sends calculated figures to Groq only when you press the button.
-        Check the linked source values before relying on the explanation.
+        If Groq is enabled, pressing this button sends calculated figures for an
+        explanation. Check the linked source values before relying on it.
       </p>
       <button
         type="button"
         className="button button--secondary"
         onClick={explain}
-        disabled={busy || !hasMetrics}
+        disabled={busy}
       >
         {busy ? "Preparing…" : "Explain"}
       </button>
-      {!hasMetrics && <p>Accepted, source-linked results are needed first.</p>}
       {message && <p role="alert">{message}</p>}
       {result && (
         <div aria-live="polite">
           <p>
-            {result.mode === "ai"
-              ? "Optional AI explanation, with calculated facts below."
-              : "Calculated facts are available. AI explanation is unavailable."}
+            {result.provider === "groq"
+              ? "Groq explanation, with calculated facts below."
+              : "Python-generated summary from calculated facts."}
           </p>
-          {result.notes.map((note, index) => {
-            const fact = facts.get(note.fact_id);
-            return fact ? (
-              <p key={`${note.fact_id}-${index}`}>
-                <strong>{fact.label}:</strong> {note.text}
-              </p>
-            ) : null;
-          })}
+          <p>{result.text}</p>
           <div className="table-scroll">
             <table className="data-table">
               <thead>

@@ -215,11 +215,7 @@ export default async function AnalysisPage({
               }
             />
           </section>
-          <AiExplanation
-            companyId={selected.id}
-            focus={tab}
-            hasMetrics={visible.length > 0}
-          />
+          <AiExplanation companyId={selected.id} focus={tab} />
           <section className="workspace-card">
             <h2>Calculated values</h2>
             {!visible.length ? (

@@ -1,12 +1,15 @@
 """Explanation requests enforce ownership and use accepted source values."""
 
+from __future__ import annotations
+
 from uuid import uuid4
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from ai_layer.explain import AiNote
+from ai import service
+from ai.groq_provider import AiNote
 from api import ai
 from api.index import app
 
@@ -24,6 +27,7 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.setenv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test")
     monkeypatch.setenv("SUPABASE_SECRET_KEY", "sb_secret_test")
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    monkeypatch.setenv("AI_PROVIDER", "none")
     original = httpx.AsyncClient
 
     def handle(request: httpx.Request) -> httpx.Response:
@@ -110,9 +114,13 @@ def test_no_key_returns_only_calculated_facts(client: TestClient) -> None:
     )
     assert response.status_code == 200, response.text
     data = response.json()
-    assert data["mode"] == "facts_only"
+    assert data["provider"] == "deterministic"
+    assert data["fallback_used"] is True
+    assert "Gross margin was 60.0%" in data["text"]
     assert data["notes"] == []
-    margin = next(fact for fact in data["facts"] if fact["id"] == "metric_gross_margin")
+    margin = next(
+        fact for fact in data["facts"] if fact["id"].startswith("metric_gross_margin")
+    )
     assert margin["value"] == "60.0"
     assert margin["sources"][0]["document_id"] == DOCUMENT
     assert margin["sources"][0]["line_item_id"] in LINES
@@ -123,20 +131,39 @@ def test_configured_provider_adds_grounded_note(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("GROQ_API_KEY", "fake-key")
+    monkeypatch.setenv("AI_PROVIDER", "groq")
 
-    async def fake_generate(facts: tuple, *, api_key: str) -> tuple[AiNote, ...]:
+    async def fake_generate(
+        facts: tuple,
+        *,
+        api_key: str,
+        model: str,
+        timeout_seconds: float,
+        client: httpx.AsyncClient | None = None,
+    ) -> tuple[AiNote, ...]:
         assert api_key == "fake-key"
-        assert {fact.id for fact in facts} >= {"metric_gross_margin"}
+        assert model == "openai/gpt-oss-20b"
+        assert timeout_seconds == 20
+        assert any(fact.id.startswith("metric_gross_margin") for fact in facts)
         return (
-            AiNote("metric_gross_margin", "This compares gross profit with revenue."),
+            AiNote(
+                next(
+                    fact.id
+                    for fact in facts
+                    if fact.id.startswith("metric_gross_margin")
+                ),
+                "observation",
+                "This compares gross profit with revenue.",
+            ),
         )
 
-    monkeypatch.setattr(ai, "generate_notes", fake_generate)
+    monkeypatch.setattr(service, "generate_notes", fake_generate)
     response = client.post(
         "/api/ai/explain",
         json={"company_id": COMPANY, "focus": "profitability"},
         headers={"Authorization": "Bearer owner"},
     )
     assert response.status_code == 200, response.text
-    assert response.json()["mode"] == "ai"
-    assert response.json()["notes"][0]["fact_id"] == "metric_gross_margin"
+    assert response.json()["provider"] == "groq"
+    assert response.json()["fallback_used"] is False
+    assert response.json()["notes"][0]["kind"] == "observation"

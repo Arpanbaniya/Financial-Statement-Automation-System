@@ -1,9 +1,7 @@
 """Optional, authenticated explanations of accepted financial results."""
 
-import os
 from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
-from typing import Literal
 from uuid import UUID
 
 import httpx
@@ -11,8 +9,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from ai_layer import build_facts, generate_notes
-from ai_layer.explain import AiProviderError, Focus
+from ai.facts import Focus, build_facts
+from ai.service import analyze
 from api.documents import UserId, _configuration
 from api.reports import _one, _rows, _snapshot
 from finance import (
@@ -106,33 +104,86 @@ async def explain_financial_results(
         by_statement[line["statement_id"]].append(line)
     try:
         all_snapshots = tuple(_snapshot(row, by_statement[row["id"]]) for row in rows)
-        current = tuple(
-            item for item in all_snapshots if item.period.period_end == target
+        periods: dict[date, list] = defaultdict(list)
+        for item in all_snapshots:
+            periods[item.period.period_end].append(item)
+        period_checks = {
+            period: validate_statements(tuple(items))
+            for period, items in periods.items()
+        }
+        checks = period_checks[target]
+        if any(check.status == "fail" for check in checks):
+            raise HTTPException(
+                status_code=409,
+                detail="Resolve failed validation checks before requesting AI",
+            )
+        valid_periods = {
+            period
+            for period, results in period_checks.items()
+            if not any(check.status == "fail" for check in results)
+        }
+        valid_snapshots = tuple(
+            item for item in all_snapshots if item.period.period_end in valid_periods
         )
-        income = _one(all_snapshots, "income_statement", target)
-        balance = _one(all_snapshots, "balance_sheet", target)
-        cash = _one(all_snapshots, "cash_flow_statement", target)
+        income = _one(valid_snapshots, "income_statement", target)
+        balance = _one(valid_snapshots, "balance_sheet", target)
+        cash = _one(valid_snapshots, "cash_flow_statement", target)
         opening = (
             _one(
-                all_snapshots,
+                valid_snapshots,
                 "balance_sheet",
                 income.period.period_start - timedelta(days=1),
             )
             if income and income.period.period_start and balance
             else None
         )
-        checks = validate_statements(current)
-        if any(check.status == "fail" for check in checks):
-            raise HTTPException(
-                status_code=409,
-                detail="Resolve failed validation checks before requesting AI",
+        earlier_income = sorted(
+            (
+                item
+                for item in valid_snapshots
+                if income
+                and item.statement_type == "income_statement"
+                and item.period.period_end < target
+                and item.period.period_type == income.period.period_type
+                and item.currency == income.currency
+            ),
+            key=lambda item: item.period.period_end,
+            reverse=True,
+        )
+        previous_income = earlier_income[0] if earlier_income else None
+        previous_end = previous_income.period.period_end if previous_income else None
+        previous_balance = (
+            _one(valid_snapshots, "balance_sheet", previous_end)
+            if previous_end
+            else None
+        )
+        previous_opening = (
+            _one(
+                valid_snapshots,
+                "balance_sheet",
+                previous_income.period.period_start - timedelta(days=1),
             )
+            if previous_income
+            and previous_income.period.period_start
+            and previous_balance
+            else None
+        )
         timestamp = datetime.now(UTC)
         ratios = calculate_ratios(
             income_statement=income,
             ending_balance_sheet=balance,
             opening_balance_sheet=opening,
             calculated_at=timestamp,
+        )
+        previous_ratios = (
+            calculate_ratios(
+                income_statement=previous_income,
+                ending_balance_sheet=previous_balance,
+                opening_balance_sheet=previous_opening,
+                calculated_at=timestamp,
+            )
+            if previous_income
+            else ()
         )
         working = calculate_working_capital(
             income_statement=income,
@@ -151,12 +202,13 @@ async def explain_financial_results(
         )
         growth = tuple(
             item
-            for item in calculate_horizontal(all_snapshots, calculated_at=timestamp)
+            for item in calculate_horizontal(valid_snapshots, calculated_at=timestamp)
             if item.current_period.period_end == target
         )
         facts = build_facts(
             payload.focus,
             ratios=ratios,
+            previous_ratios=previous_ratios,
             working=working,
             cash=flows,
             growth=growth,
@@ -164,24 +216,13 @@ async def explain_financial_results(
         )
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    if not facts:
-        raise HTTPException(
-            status_code=409,
-            detail="No validated, source-linked facts are available for this area",
-        )
-    notes = ()
-    mode: Literal["ai", "facts_only"] = "facts_only"
-    api_key = os.environ.get("GROQ_API_KEY", "").strip()
-    if api_key:
-        try:
-            notes = await generate_notes(facts, api_key=api_key)
-            mode = "ai"
-        except AiProviderError:
-            pass
+    analysis = await analyze(facts)
     documents = {item.id: item.document_id for item in all_snapshots}
     return JSONResponse(
         {
-            "mode": mode,
+            "provider": analysis.provider,
+            "fallback_used": analysis.fallback_used,
+            "text": analysis.text,
             "period_end": target.isoformat(),
             "facts": [
                 {
@@ -190,6 +231,7 @@ async def explain_financial_results(
                     "label": fact.label,
                     "value": str(fact.value) if fact.value is not None else None,
                     "unit": fact.unit,
+                    "currency": fact.currency,
                     "period_end": (
                         fact.period_end.isoformat() if fact.period_end else None
                     ),
@@ -204,7 +246,10 @@ async def explain_financial_results(
                 }
                 for fact in facts
             ],
-            "notes": [{"fact_id": note.fact_id, "text": note.text} for note in notes],
+            "notes": [
+                {"fact_id": note.fact_id, "kind": note.kind, "text": note.text}
+                for note in analysis.notes
+            ],
         },
         headers={"Cache-Control": "private, no-store"},
     )

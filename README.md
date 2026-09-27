@@ -25,7 +25,7 @@ pnpm install
 pnpm dev
 ```
 
-Open `http://localhost:3000`. Keep `SUPABASE_SECRET_KEY` server-side. Set `SEC_USER_AGENT` to use the SEC adapter, or `GROQ_API_KEY` for optional explanations.
+Open `http://localhost:3000`. Keep `SUPABASE_SECRET_KEY` server-side. Set `SEC_USER_AGENT` to use the SEC adapter. Financial explanations work without Groq; set `AI_PROVIDER=groq` and `GROQ_API_KEY` to enable it.
 
 ## Checks
 
