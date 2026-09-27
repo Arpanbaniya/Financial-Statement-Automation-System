@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "node --experimental-strip-types --test lib/metric-provenance.test.ts",
     "typecheck": "tsc --noEmit",
     "format:check": "prettier --check app lib proxy.ts next.config.ts eslint.config.mjs package.json tsconfig.json .prettierrc.json README.md vercel.json"
   },

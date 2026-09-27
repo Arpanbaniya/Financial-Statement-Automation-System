@@ -1,38 +1,41 @@
 # Financial Statement Automation System
 
-An in-progress app for uploading financial statements, checking the numbers, and downloading an Excel report.
+[Live site](https://financial-statement-automation-syst.vercel.app/) · [![CI](https://github.com/Arpanbaniya/Financial-Statement-Automation-System/actions/workflows/ci.yml/badge.svg)](https://github.com/Arpanbaniya/Financial-Statement-Automation-System/actions/workflows/ci.yml)
 
-[Live site](https://financial-statement-automation-syst.vercel.app/)
+Upload a PDF, Excel workbook, or CSV statement. The app extracts source lines, maps known financial fields, checks the figures, and builds an Excel report. Unclear values go to a review queue. Original files stay private in Supabase Storage.
 
-The site has sign-in, private uploads, and a dashboard. The Python code handles extraction, validation, ratios, reports, and SEC filing data. Uploads are not yet processed into saved statements automatically, so the analysis pages need accepted data before they can show results.
+## What it does
+
+- Private accounts, uploads, and document deletion
+- Source-linked statements with currency, unit, and period checks
+- Validation, ratios, working capital, cash flow, and Excel export
+- Optional Groq explanations; financial calculations remain deterministic
+
+Next.js is the interface, FastAPI handles document processing and reports, and Supabase stores the files and data. Uploads go directly from the browser to private Storage. The server checks ownership before processing or deletion.
 
 ## Run locally
 
-You need Python 3.12, Node.js, and pnpm. Copy `.env.example` to `.env.local` and add your Supabase values.
-
-In one terminal:
+Use Python 3.12, Node.js 24, and pnpm 11. Copy `.env.example` to `.env.local` and fill in your own Supabase project values. Apply the SQL migrations in `supabase/migrations` before using uploads.
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-.\.venv\Scripts\python.exe -m uvicorn api.index:app --reload --port 8000
-```
-
-In another terminal:
-
-```powershell
 pnpm install
-pnpm dev
 ```
 
-Open `http://localhost:3000`. Keep `SUPABASE_SECRET_KEY` server-side. Set `SEC_USER_AGENT` to use the SEC adapter. Financial explanations work without Groq; set `AI_PROVIDER=groq` and `GROQ_API_KEY` to enable it.
+Run `pnpm dev` for the site and `python -m uvicorn api.index:app --reload --port 8000` in a second terminal for its API. On Vercel, the Python API is deployed with the site.
 
 ## Checks
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest
+.\.venv\Scripts\python.exe -m ruff check .
 pnpm lint
 pnpm typecheck
+pnpm test
+pnpm build
 ```
 
-MIT licensed. See [LICENSE](LICENSE).
+This is a portfolio project, not investment advice. Use public or synthetic statements for the demo. Scanned PDFs may need OCR, and multi-column statements require choosing the correct amount column before processing.
+
+MIT licensed.
