@@ -3,35 +3,15 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
-import { createClient } from "../../lib/supabase/client";
+import { authenticatedRequest, apiError } from "../../lib/api-client";
 
 type Company = { id: string; name: string };
 
 async function callDocument(path: string, method: string, body?: object) {
-  const { data } = await createClient().auth.getSession();
-  if (!data.session) throw new Error("Your session expired. Sign in again.");
-  const response = await fetch(path, {
-    method,
-    headers: {
-      Authorization: `Bearer ${data.session.access_token}`,
-      ...(body ? { "Content-Type": "application/json" } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const response = await authenticatedRequest(path, method, body);
   if (response.ok) return;
   const result = await response.json().catch(() => ({}));
-  const validation = Array.isArray(result.detail)
-    ? result.detail
-        .map((issue: { loc?: string[]; msg?: string }) =>
-          `${issue.loc?.at(-1) || "Field"}: ${issue.msg || "Invalid value"}`,
-        )
-        .join("; ")
-    : null;
-  throw new Error(
-    typeof result.detail === "string"
-      ? result.detail
-      : validation || "Request failed. Try again.",
-  );
+  throw new Error(apiError(result));
 }
 
 export function DocumentActions({

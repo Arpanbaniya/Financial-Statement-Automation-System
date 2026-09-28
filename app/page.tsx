@@ -11,16 +11,19 @@ export default function HomePage() {
             Financial statements you can <em>trace.</em>
           </h1>
           <p className="description">
-            Upload a statement, check the source behind each figure, and bring
-            the results into one place. Built for careful analysis, with room
-            for human review when a number is uncertain.
+            Turn a trial balance into financial statements. Review account
+            mappings, reconcile the figures, and explore the results with clear
+            charts and an Excel report.
           </p>
           <div className="actions">
             <Link className="button button--primary" href="/signup">
               Create a workspace <span aria-hidden="true">↗</span>
             </Link>
-            <Link className="button button--secondary" href="/dashboard">
-              Open dashboard
+            <Link
+              className="button button--secondary"
+              href="/dashboard/trial-balance"
+            >
+              Generate statements
             </Link>
           </div>
           <p className="hero__note">

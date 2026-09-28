@@ -2,14 +2,14 @@
 
 [Live site](https://financial-statement-automation-syst.vercel.app/) · [![CI](https://github.com/Arpanbaniya/Financial-Statement-Automation-System/actions/workflows/ci.yml/badge.svg)](https://github.com/Arpanbaniya/Financial-Statement-Automation-System/actions/workflows/ci.yml)
 
-Upload a PDF, Excel workbook, or CSV statement. The app extracts source lines, maps known financial fields, checks the figures, and builds an Excel report. Unclear values go to a review queue. Original files stay private in Supabase Storage.
+Upload a trial balance as CSV or Excel, review the account categories, and generate an income statement and balance sheet. Add opening balances and a cash movement schedule to generate a reconciled cash flow statement. You can also extract and analyze existing PDF, Excel, and CSV statements.
 
 ## What it does
 
 - Private accounts, uploads, and document deletion
-- Source-linked statements with currency, unit, and period checks
-- Validation, ratios, working capital, cash flow, and Excel export
-- Optional Groq explanations; financial calculations remain deterministic
+- Debit/credit checks, account mapping, and retained earnings reconciliation
+- Financial charts, ratios, working capital, and Excel reports with source schedules
+- Groq explanations with an automatic deterministic fallback
 
 Next.js is the interface, FastAPI handles document processing and reports, and Supabase stores the files and data. Uploads go directly from the browser to private Storage. The server checks ownership before processing or deletion.
 
@@ -36,7 +36,9 @@ pnpm test
 pnpm build
 ```
 
-This is a portfolio project, not investment advice. Use public or synthetic statements for the demo. Scanned PDFs may need OCR, and multi-column statements require choosing the correct amount column before processing.
+Start with **Generate statements** in the dashboard. The CSV template lists the supported columns. Use a complete adjusted pre-closing trial balance for income generation; a post-closing trial balance provides only the balance sheet. Convert Excel formulas to values before uploading. Cash flow stays unavailable when the supporting data does not reconcile.
+
+This MVP produces general-purpose reports, not jurisdiction-specific statutory filings. Scanned PDFs need OCR before extraction.
 
 [Interview notes](docs/interview-prep.txt) cover the accounting, analysis, data, security, and AI choices.
 

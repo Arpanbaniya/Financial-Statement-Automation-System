@@ -2,7 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DocumentActions } from "../../../components/document-actions";
 import { requireWorkspace } from "../../../../lib/require-workspace";
-import { formatDate, formatFileSize, formatNumber, label } from "../../../../lib/workspace";
+import {
+  formatDate,
+  formatFileSize,
+  formatNumber,
+  label,
+} from "../../../../lib/workspace";
 
 export default async function DocumentDetailPage({
   params,
@@ -63,7 +68,7 @@ export default async function DocumentDetailPage({
     ? await supabase
         .from("financial_line_items")
         .select(
-          "id,statement_id,canonical_name,original_label,original_value,normalized_value,source_page,source_sheet,source_cell,review_status",
+          "id,statement_id,canonical_name,original_label,original_value,normalized_value,source_page,source_sheet,source_cell,review_status,extraction_method",
         )
         .eq("user_id", user.id)
         .in("statement_id", statementIds)
@@ -130,6 +135,21 @@ export default async function DocumentDetailPage({
         status={document.status}
         companies={companies.data || []}
       />
+      {/\.(csv|xlsx)$/i.test(document.original_filename) && (
+        <section className="workspace-card">
+          <h2>Is this a trial balance?</h2>
+          <p>
+            Generate statements from account-level debit and credit balances,
+            with a mapping review and retained earnings reconciliation.
+          </p>
+          <Link
+            className="button"
+            href={`/dashboard/trial-balance?document=${id}`}
+          >
+            Open statement generator
+          </Link>
+        </section>
+      )}
       <section className="workspace-card">
         <h2>Extraction and processing</h2>
         {!jobs.data?.length ? (
@@ -209,20 +229,34 @@ export default async function DocumentDetailPage({
                               ? label(item.canonical_name)
                               : "Unmapped"}
                           </td>
-                          <td>{item.original_value ?? "—"}</td>
+                          <td>
+                            {item.extraction_method ===
+                            "trial_balance_derived_v1"
+                              ? "Calculated from TB"
+                              : (item.original_value ?? "—")}
+                          </td>
                           <td>
                             {item.normalized_value === null
                               ? "Unavailable"
                               : formatNumber(item.normalized_value, 2)}
                           </td>
                           <td>
-                            {item.source_page
-                              ? `Page ${item.source_page}`
-                              : item.source_sheet
-                                ? `${item.source_sheet}${item.source_cell ? `!${item.source_cell}` : ""}`
-                                : item.source_cell
-                                  ? `CSV!${item.source_cell}`
-                                : "Location unavailable"}
+                            {item.extraction_method ===
+                            "trial_balance_derived_v1" ? (
+                              <Link
+                                href={`/dashboard/trial-balance?document=${id}`}
+                              >
+                                Reviewed trial balance & schedule
+                              </Link>
+                            ) : item.source_page ? (
+                              `Page ${item.source_page}`
+                            ) : item.source_sheet ? (
+                              `${item.source_sheet}${item.source_cell ? `!${item.source_cell}` : ""}`
+                            ) : item.source_cell ? (
+                              `CSV!${item.source_cell}`
+                            ) : (
+                              "Location unavailable"
+                            )}
                           </td>
                           <td>{label(item.review_status)}</td>
                         </tr>

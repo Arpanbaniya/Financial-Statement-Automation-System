@@ -494,6 +494,100 @@ CASH_FLOW_FIELDS = _fields(
 )
 
 
+BALANCE_SHEET_FIELDS += _fields(
+    "balance_sheet",
+    "instant",
+    (
+        (
+            "other_equity",
+            "Other equity reserves",
+            "Equity reserves other than capital, retained earnings, "
+            "treasury stock and OCI.",
+            ("Other reserves",),
+            SIGNED_EQUITY,
+            False,
+        ),
+    ),
+)
+CASH_FLOW_FIELDS += _fields(
+    "cash_flow_statement",
+    "duration",
+    (
+        (
+            "other_working_capital",
+            "Other working capital movements",
+            "Cash effect of other operating current asset and liability movements.",
+            ("Other working capital changes",),
+            SIGNED_CASH,
+            False,
+        ),
+        (
+            "other_operating_adjustments",
+            "Other operating adjustments",
+            "Reviewed adjustments for noncash items and nonoperating gains or losses.",
+            ("Other noncash operating adjustments",),
+            SIGNED_CASH,
+            False,
+        ),
+        (
+            "asset_sale_proceeds",
+            "Proceeds from asset sales",
+            "Cash received from sales of long-lived assets.",
+            ("Proceeds from disposal of assets",),
+            POSITIVE_CASH,
+            False,
+        ),
+        (
+            "other_investing_cash_flow",
+            "Other investing cash flow",
+            "Other reviewed investing cash receipts less payments.",
+            ("Other investing activities",),
+            SIGNED_CASH,
+            False,
+        ),
+        (
+            "equity_issuance",
+            "Cash proceeds from equity issues",
+            "Cash received from issuing capital.",
+            ("Proceeds from issuing shares",),
+            POSITIVE_CASH,
+            False,
+        ),
+        (
+            "other_financing_cash_flow",
+            "Other financing cash flow",
+            "Other reviewed financing cash receipts less payments.",
+            ("Other financing activities",),
+            SIGNED_CASH,
+            False,
+        ),
+        (
+            "fx_effect",
+            "Exchange-rate effect on cash",
+            "Effect of exchange-rate changes on cash and cash equivalents.",
+            ("Effect of exchange rates on cash",),
+            SIGNED_CASH,
+            False,
+        ),
+        (
+            "beginning_cash",
+            "Beginning cash",
+            "Cash and cash equivalents at the beginning of the period.",
+            ("Opening cash",),
+            POSITIVE_ASSET,
+            False,
+        ),
+        (
+            "ending_cash",
+            "Ending cash",
+            "Cash and cash equivalents at the end of the period.",
+            ("Closing cash",),
+            POSITIVE_ASSET,
+            False,
+        ),
+    ),
+)
+
 TAXONOMY = INCOME_STATEMENT_FIELDS + BALANCE_SHEET_FIELDS + CASH_FLOW_FIELDS
 FIELDS_BY_STATEMENT = MappingProxyType(
     {

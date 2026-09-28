@@ -20,6 +20,7 @@ export default async function WorkspaceLayout({
       <nav className="workspace__nav" aria-label="Workspace navigation">
         <Link href="/dashboard">Overview</Link>
         <Link href="/dashboard/companies">Companies</Link>
+        <Link href="/dashboard/trial-balance">Generate statements</Link>
         <Link href="/dashboard/analysis">Analysis</Link>
         <Link href="/dashboard/validation">Validation</Link>
         <Link href="/dashboard/reports">Reports</Link>

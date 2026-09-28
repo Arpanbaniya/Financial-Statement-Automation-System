@@ -102,9 +102,9 @@ def test_metric_trace_reaches_original_value_and_location() -> None:
 
 
 def test_review_migration_matches_the_canonical_taxonomy() -> None:
-    sql = Path(
-        "supabase/migrations/20260926000200_phase21_review_audit.sql"
-    ).read_text()
+    sql = "\n".join(
+        path.read_text() for path in Path("supabase/migrations").glob("*.sql")
+    )
     names = set(
         re.findall(
             r"\('(income_statement|balance_sheet|cash_flow_statement)','([^']+)'\)", sql

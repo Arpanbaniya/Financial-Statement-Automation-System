@@ -355,6 +355,9 @@ def _statement_checks(
                         ("operating_cash_flow", 1),
                         ("investing_cash_flow", 1),
                         ("financing_cash_flow", 1),
+                    )
+                    + (
+                        (("fx_effect", 1),) if _accepted(statement, "fx_effect") else ()
                     ),
                     "net_change_in_cash",
                     policy,

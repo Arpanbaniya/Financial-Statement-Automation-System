@@ -149,7 +149,24 @@ def _records(
                     currency=payload.currency,
                     source_location=location,
                 )
-                if mapping.canonical_field is None and row.number == 1:
+                if (
+                    mapping.canonical_field is None
+                    and row.number == 1
+                    and (
+                        amount.status != "normalized"
+                        or label_cell.value.strip().lower()
+                        in {
+                            "item",
+                            "label",
+                            "account",
+                            "description",
+                            "line item",
+                            "income statement",
+                            "balance sheet",
+                            "cash flow statement",
+                        }
+                    )
+                ):
                     continue  # Column headings are not financial values.
                 accepted = (
                     mapping.canonical_field is not None

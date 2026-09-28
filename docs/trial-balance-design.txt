@@ -1,0 +1,99 @@
+TRIAL BALANCE GENERATION — IMPLEMENTATION NOTES
+
+Reference review (27 September 2026)
+
+1. https://github.com/dhruvdua88/ind-as-tool
+   Reviewed grouping aggregation, statement construction and cash-flow suggestions.
+   Useful pattern: account -> grouping -> statement, with debit-positive balances
+   and display signs appropriate to each account type. Its cash-flow suggestions
+   need preparer review; balance-sheet differences alone do not prove cash flows.
+   It includes Excel export and rounding routines. No engine test suite was found
+   in the reviewed source tree. The reference is all-rights-reserved: no code copied.
+
+2. https://github.com/jupitexai/statutory-reporting-plugin
+   Reviewed classification instructions and report structure. Useful pattern:
+   explicit mapping schedule, separate source accounts from presentation subtotals.
+   Rejected its statement that an unbalanced pre-closing TB can represent profit.
+   A complete pre-closing TB also balances. This project blocks an imbalance.
+   The plugin describes a workflow, not a tested deterministic accounting engine.
+
+3. https://github.com/kbef-excel/excel-accounting-system
+   Reviewed the documented CoA, normal balances and transaction -> GL -> TB ->
+   statements pipeline. Its workbook demonstrates simple totals and a dashboard.
+   Our input contract begins at the adjusted TB, avoiding a second ledger system.
+   No automated tests are provided by that workbook repository.
+
+4. https://github.com/bilalpiaic/Easy-Books
+   Reviewed central posting invariants, reporting/closing references and cash-flow
+   comparative tests. Useful patterns: Decimal money, one write transaction,
+   retained-earnings closing entries and cash reconciliation tests.
+   Its full transaction ledger, inventory and industry modules exceed this MVP.
+
+All application code is original. No reference code, assets or dependency trees
+were copied into this repository.
+
+Simplest architecture
+
+Existing private upload -> original file -> trial-balance parser -> user-reviewed
+categories -> one Decimal compiler -> existing ratios/explanations/export.
+CSV and XLSX support Account Name, Debit, Credit and optional Account Code,
+Opening Debit, Opening Credit. Multiple TB sheets require explicit selection.
+Formula cells are rejected; supply a values export. No silent formula evaluation.
+The API supports 1,000 rows per trial balance, existing upload limits still apply.
+
+Generation requires confirmation that the adjusted TB is complete. Only then
+are absent account categories treated as zero. Ambiguous accounts need mapping.
+Duplicate account codes (or names when codes are absent) block generation.
+Known subtotal rows are excluded visibly; other exclusions are user decisions.
+Amounts retain four-decimal input precision and normalize units using Decimal.
+Reconciliation tolerance is 0.01 normalized currency units.
+
+Pre-closing: RE at end = RE in trial balance + generated net income - distributions.
+Post-closing: generate BS only, without adding profit again. Income, expense and
+distribution accounts must already be closed to zero. No plug entries are made.
+
+Cash flow uses an indirect operating reconciliation. Opening TB is complete,
+balanced, post-closing and immediately precedes the reporting period. The user
+supplies gross investing/financing movements plus other operating and FX
+adjustments, explicitly confirms completeness and describes the adjustment basis.
+Interest and income taxes are operating cash flows in this MVP. Depreciation is
+added back once. Gains/losses, acquisitions, leases, FX and reclassifications need
+the appropriate supporting adjustments; they cannot be inferred from closing TB.
+The bridge must reach actual closing cash. Failure leaves CF unavailable while
+valid income and balance sheets remain usable. FX is displayed separately.
+
+Persistence
+
+trial_balance_runs stores only inputs/settings, one per private document. The
+compiler recalculates on preview/export/explanation. Generated canonical amounts
+reuse financial_statements/financial_line_items/financial_metrics. The SQL function
+saves the complete replacement in one transaction and rejects competing accepted
+versions for the same company/date/type. Stable generated identifiers and cascade
+deletes prevent duplicate metrics during regeneration. Opening schedules are draft
+statements for source links, not duplicate accepted historical statements.
+The function is service-role-only; every API action checks the signed-in owner.
+Generated source links lead back to the reviewed account and movement schedules.
+
+Excel is a snapshot of the same engine, with Trial Balance, Generation Checks,
+and Charts in addition to existing statement/analysis tabs. Edit the source and
+regenerate in the app to recalculate. Spreadsheet labels are escaped as text.
+Groq receives calculated facts through the existing provider; failures return
+the existing deterministic explanation without changing numbers.
+
+Review and verification
+
+Tests cover balance failure, unknown mapping, duplicate account identities,
+post-closing inputs, losses, contra revenue, retained earnings, distributions,
+opening-period validation, cash reconciliation, scales, multi-sheet selection,
+shared ratios, Excel schedules/charts, ownership, failed writes, stable generation
+IDs and deterministic fallback. Existing document/ratio/export/AI tests still run.
+The first-row heading heuristic in legacy statement processing was narrowed so
+an unmapped financial amount is preserved for review instead of being dropped.
+Repeated frontend authenticated requests now share one helper where updated.
+
+Boundaries
+
+This MVP generates general-purpose statements from adjusted account balances.
+It does not post journals, invent tax/closing adjustments, consolidate companies,
+perform OCR, evaluate arbitrary Excel formulas, or certify statutory compliance.
+Those are separate additions, not prerequisites for this TB generation workflow.

@@ -45,6 +45,7 @@ EXPECTED = {
         "retained_earnings",
         "accumulated_other_comprehensive_income",
         "treasury_stock",
+        "other_equity",
         "shareholders_equity",
     },
     "cash_flow_statement": {
@@ -64,12 +65,21 @@ EXPECTED = {
         "share_repurchases",
         "financing_cash_flow",
         "net_change_in_cash",
+        "other_working_capital",
+        "other_operating_adjustments",
+        "asset_sale_proceeds",
+        "other_investing_cash_flow",
+        "equity_issuance",
+        "other_financing_cash_flow",
+        "fx_effect",
+        "beginning_cash",
+        "ending_cash",
     },
 }
 
 
 def test_inventory_matches_all_three_planned_statements() -> None:
-    assert len(TAXONOMY) == 52
+    assert len(TAXONOMY) == 62
     assert set(FIELDS_BY_STATEMENT) == set(EXPECTED)
     for statement_type, expected_names in EXPECTED.items():
         fields = fields_for_statement(statement_type)

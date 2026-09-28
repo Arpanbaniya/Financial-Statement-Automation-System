@@ -195,7 +195,7 @@ async def download_excel_report(
                 "select": (
                     "id,statement_id,canonical_name,original_value,"
                     "normalized_value,currency,source_page,source_sheet,"
-                    "source_cell,review_status"
+                    "source_cell,review_status,extraction_method"
                 ),
                 "statement_id": f"in.({statement_ids})",
                 "user_id": f"eq.{user_id}",
@@ -206,6 +206,39 @@ async def download_excel_report(
             raise HTTPException(
                 status_code=413, detail="Too many source lines for one export"
             )
+        generated_ids = {
+            row["document_id"]
+            for row in chosen
+            if any(
+                line["statement_id"] == row["id"]
+                and line.get("extraction_method") == "trial_balance_derived_v1"
+                for line in lines
+            )
+        }
+        if len(generated_ids) == 1:
+            from api.trial_balance import generate
+            from finance.trial_balance import TrialBalanceRequest
+
+            source_id = next(iter(generated_ids))
+            runs = await _rows(
+                client,
+                url,
+                key,
+                "trial_balance_runs",
+                {
+                    "select": "settings",
+                    "document_id": f"eq.{source_id}",
+                    "user_id": f"eq.{user_id}",
+                    "limit": "1",
+                },
+            )
+            if runs:
+                return await generate(
+                    UUID(source_id),
+                    "excel",
+                    TrialBalanceRequest(**runs[0]["settings"]),
+                    user_id,
+                )
     by_statement: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for line in lines:
         by_statement[line["statement_id"]].append(line)

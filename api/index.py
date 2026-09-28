@@ -7,6 +7,7 @@ from api.documents import router as documents_router
 from api.processing import job_router
 from api.processing import router as processing_router
 from api.reports import router as reports_router
+from api.trial_balance import router as trial_balance_router
 
 app = FastAPI(title="Financial Statement Automation API")
 app.include_router(ai_router)
@@ -14,6 +15,7 @@ app.include_router(documents_router)
 app.include_router(processing_router)
 app.include_router(job_router)
 app.include_router(reports_router)
+app.include_router(trial_balance_router)
 
 
 @app.get("/api/health")

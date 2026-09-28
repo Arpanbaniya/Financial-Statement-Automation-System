@@ -106,6 +106,7 @@ export type Database = {
         source_sheet: string | null;
         source_cell: string | null;
         review_status: string;
+        extraction_method: string | null;
       }>;
       financial_metrics: ReadOnlyTable<{
         id: string;

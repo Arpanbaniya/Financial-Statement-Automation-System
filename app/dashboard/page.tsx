@@ -108,7 +108,9 @@ export default async function DashboardPage({
       </div>
       <div className="workspace__columns">
         <div>
-          <DocumentUpload />
+          <div id="upload">
+            <DocumentUpload />
+          </div>
         </div>
         <div>
           <section className="workspace-card">
