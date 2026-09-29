@@ -40,6 +40,4 @@ Start with **Generate statements** in the dashboard. The CSV template lists the 
 
 This MVP produces general-purpose reports, not jurisdiction-specific statutory filings. Scanned PDFs need OCR before extraction.
 
-[Interview notes](docs/interview-prep.txt) cover the accounting, analysis, data, security, and AI choices.
-
 MIT licensed.
