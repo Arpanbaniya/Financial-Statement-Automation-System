@@ -2,6 +2,7 @@
 
 from decimal import Decimal
 from io import BytesIO
+from pathlib import Path
 
 import pytest
 from openpyxl import Workbook, load_workbook
@@ -19,22 +20,9 @@ COMPANY = "11111111-1111-4111-8111-111111111111"
 DOCUMENT = "22222222-2222-4222-8222-222222222222"
 # Opening: A=1500, L=300, E=1200. NI=400; dividends=100.
 # Closing: A=1900, L=400, E=1500. Cash: 500+500-100-100=800.
-SOURCE = b"""Account Code,Account Name,Debit,Credit,Opening Debit,Opening Credit
-100,Cash,800,0,500,0
-110,Accounts receivable,300,0,200,0
-120,Inventory,200,0,100,0
-150,Equipment,800,0,700,0
-151,Accumulated depreciation,0,200,0,0
-200,Accounts payable,0,200,0,100
-210,Long term debt,0,200,0,200
-300,Capital,0,1000,0,1000
-310,Retained earnings,0,200,0,200
-320,Dividends,100,0,0,0
-400,Sales revenue,0,1500,0,0
-500,Cost of goods sold,600,0,0,0
-510,Rent expense,300,0,0,0
-520,Depreciation expense,200,0,0,0
-"""
+SOURCE = (
+    Path(__file__).parent / "fixtures/synthetic_trial_balance_2026.csv"
+).read_bytes()
 
 
 def request(**kwargs):

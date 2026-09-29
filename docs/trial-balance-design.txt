@@ -97,3 +97,26 @@ This MVP generates general-purpose statements from adjusted account balances.
 It does not post journals, invent tax/closing adjustments, consolidate companies,
 perform OCR, evaluate arbitrary Excel formulas, or certify statutory compliance.
 Those are separate additions, not prerequisites for this TB generation workflow.
+
+Production verification and cleanup (29 September 2026)
+
+The implementation passed 213 Python tests, two frontend tests, Ruff, ESLint,
+TypeScript checks and the production build. GitHub CI passed for e2f78d1.
+The trial-balance migration is applied in Production.
+
+A synthetic CSV was uploaded and reviewed through the live application. Debits
+and credits both totaled 3,300. Generated net income was 400; assets were 1,900,
+liabilities 400 and equity 1,500. Cash reconciled from 500 to 800: operating 500,
+investing -100 and financing -100. The live Groq explanation succeeded.
+Regenerating preserved three current statements and one draft opening schedule
+without duplicates. Both Excel download routes worked. The downloaded workbook
+contained 14 sheets, 14 source accounts, two charts and no Excel error cells.
+
+The approved synthetic documents and results were permanently removed:
+smoke_income_2024.xlsx, smoke_income_2025.csv and synthetic_trial_balance_2026.csv.
+The empty Synthetic Demo Co was then removed. A scoped Production query verified
+zero documents, statements, line items, metrics, trial-balance runs, validation
+results and private storage objects remaining for the test account, and zero
+records for the demo company. The dashboard showed zero documents and companies.
+The synthetic CSV is retained only as a repository test fixture, replacing the
+duplicated inline test data. The downloaded example workbook remains local.
